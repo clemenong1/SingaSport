@@ -19,17 +19,36 @@ export default function TabLayout() {
   const colorScheme = useColorScheme();
 
   return (
-    <Tabs
-      screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
-        // Disable the static render of the header on web
-        // to prevent a hydration error in React Navigation v6.
-        headerShown: useClientOnlyValue(false, true),
-      }}>
+<Tabs
+  screenOptions={{
+    headerShown: true, // <-- fix: always show header
+    tabBarActiveTintColor: '#d32f2f',
+    tabBarInactiveTintColor: '#8e8e93',
+    tabBarStyle: {
+      backgroundColor: '#ffffff',
+      borderTopWidth: 1,
+      borderTopColor: '#e0e0e0',
+      paddingBottom: 8,
+      paddingTop: 4,
+      height: 60,
+    },
+    tabBarLabelStyle: {
+      fontSize: 12,
+      fontWeight: '600',
+    },
+    headerStyle: {
+      height: 60,
+      backgroundColor: '#fff',
+      borderBottomColor: '#e0e0e0',
+      borderBottomWidth: 1,
+    },
+  }}
+      >
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Tab One',
+          headerTitle: 'Tab One',
+          tabBarLabel: 'Tab',
           tabBarIcon: ({ color }) => <TabBarIcon name="code" color={color} />,
           headerRight: () => (
             <Link href="/modal" asChild>
@@ -50,7 +69,24 @@ export default function TabLayout() {
       <Tabs.Screen
         name="two"
         options={{
-          title: 'Tab Two',
+          headerTitle: 'Tab One',
+          tabBarLabel: 'DataBase',
+          tabBarIcon: ({ color }) => <TabBarIcon name="code" color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="three"
+        options={{
+          headerTitle: 'Tab One',
+          tabBarLabel: 'Storage',
+          tabBarIcon: ({ color }) => <TabBarIcon name="code" color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="four"
+        options={{
+          headerTitle: 'Tab One',
+          tabBarLabel: 'Functions',
           tabBarIcon: ({ color }) => <TabBarIcon name="code" color={color} />,
         }}
       />
