@@ -25,6 +25,7 @@ export default function Login() {
       alert('Sign up failed: ' + error.message);
     }
   };
+  //added space
 
   return (
     <SafeAreaView>
