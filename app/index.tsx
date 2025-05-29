@@ -13,7 +13,7 @@ export default function Login() {
       const user = await signInWithEmailAndPassword(auth, email, password);
       if (user) router.replace('/(tabs)');
     } catch (error: any) {
-      alert('Sign in failed:' + error.message);
+      alert('Sign in failed: ' + error.message);
     }
   };
 
