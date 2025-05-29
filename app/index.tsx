@@ -40,3 +40,5 @@ export default function Login() {
     </SafeAreaView>
   );
 }
+
+// clemen is gay
