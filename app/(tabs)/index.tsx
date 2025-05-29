@@ -1,12 +1,12 @@
 import { StyleSheet, TouchableOpacity, View, Text } from 'react-native';
 import { auth } from '../../FirebaseConfig';
-import { onAuthStateChanged, signOut } from 'firebase/auth';
+import { signOut } from 'firebase/auth';
 import { router } from 'expo-router';
 
 export default function TabOneScreen() {
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>SingaSport</Text>
+      <Text style={styles.title}>Singa</Text>
 
       <TouchableOpacity
         style={styles.button}
@@ -15,7 +15,7 @@ export default function TabOneScreen() {
           try {
             await signOut(auth);
             console.log("Signed out successfully");
-            router.replace('/(auth)');
+            router.replace('/(auth)/index');
           } catch (error: any) {
             alert('Error signing out: ' + error.message);
           }

@@ -3,7 +3,7 @@ import { StyleSheet, SafeAreaView, Text, View } from 'react-native';
 export default function TabTwoScreen() {
   return (
     <SafeAreaView style={styles.container}>
-      <Text style={styles.title}>DataBase</Text>
+      <Text style={styles.title}>Storage</Text>
     </SafeAreaView>
   );
 }
