@@ -11,11 +11,9 @@ export default function TabOneScreen() {
       <TouchableOpacity
         style={styles.button}
         onPress={async () => {
-          console.log("Sign out button pressed");
           try {
             await signOut(auth);
-            console.log("Signed out successfully");
-            router.replace('/(auth)/index');
+            router.replace('/(auth)');
           } catch (error: any) {
             alert('Error signing out: ' + error.message);
           }
