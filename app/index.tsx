@@ -1,4 +1,4 @@
-import { auth } from '../../FirebaseConfig';
+import { auth } from '../FirebaseConfig';
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
 import React, { useState } from 'react';
 import {
@@ -18,7 +18,7 @@ export default function Login() {
   const signIn = async () => {
     try {
       const user = await signInWithEmailAndPassword(auth, email, password);
-      if (user) router.replace('../(tabs)');
+      if (user) router.replace('/(tabs)');
     } catch (error: any) {
       alert('Sign in failed: ' + error.message);
     }
@@ -27,7 +27,7 @@ export default function Login() {
   const signUp = async () => {
     try {
       const user = await createUserWithEmailAndPassword(auth, email, password);
-      if (user) router.replace('../(tabs)');
+      if (user) router.replace('/(tabs)');
     } catch (error: any) {
       alert('Sign up failed: ' + error.message);
     }
