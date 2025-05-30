@@ -38,7 +38,7 @@
     },
     "plugins": [
       [
-        "react-native-maps",
+        "expo-build-properties",
         {
           "iosGoogleMapsApiKey": "AIzaSyBM4p18mK6jgYwZOuSVUYOwBnNs6gJ0WGY",
           "androidGoogleMapsApiKey": "AIzaSyDv9-jlkqTkY5SsRwcGHUhvW4vAAW5eXlg"
