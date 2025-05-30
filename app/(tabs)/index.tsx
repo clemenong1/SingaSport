@@ -1,62 +1,68 @@
-import { StyleSheet, TouchableOpacity, View, Text } from 'react-native';
-import { auth } from '../../FirebaseConfig';
-import { signOut } from 'firebase/auth';
-import { router } from 'expo-router';
+import React, { useEffect, useState } from 'react';
+import { StyleSheet, View, Dimensions, ActivityIndicator, Alert } from 'react-native';
+import MapView, { Marker, PROVIDER_GOOGLE, Region } from 'react-native-maps';
+import * as Location from 'expo-location';
 
-export default function TabOneScreen() {
+export default function MapScreen(): React.JSX.Element {
+  const [region, setRegion] = useState<Region | null>(null);
+
+  useEffect(() => {
+    (async () => {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission denied', 'Location access is required to use this feature.');
+        return;
+      }
+
+      const location = await Location.getCurrentPositionAsync({});
+      const { latitude, longitude } = location.coords;
+
+      setRegion({
+        latitude,
+        longitude,
+        latitudeDelta: 0.01,
+        longitudeDelta: 0.01
+      });
+    })();
+  }, []);
+
+  if (!region) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#0000ff" />
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Singa</Text>
-
-      <TouchableOpacity
-        style={styles.button}
-        onPress={async () => {
-          console.log('pressed')
-          try {
-            await signOut(auth);
-            console.log('Signed out successfully')
-            router.push('/');
-            console.log('Signed out successfully and router')
-          } catch (error: any) {
-            alert('Error signing out: ' + error.message);
-          }
-        }}
+      <MapView
+        provider={PROVIDER_GOOGLE}
+        style={styles.map}
+        region={region}
+        showsUserLocation
       >
-        <Text style={styles.buttonText}>Sign Out</Text>
-      </TouchableOpacity>
+        <Marker
+          coordinate={region}
+          title="You are here"
+          description="Your current location"
+        />
+      </MapView>
     </View>
   );
 }
 
-
 const styles = StyleSheet.create({
-  container: {
+  container: { flex: 1 },
+  loadingContainer: {
     flex: 1,
     justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#f2f2f2',
-    paddingHorizontal: 20,
+    alignItems: 'center'
   },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    marginBottom: 40,
-    color: '#333',
-  },
-  button: {
-    backgroundColor: '#cc0000',
-    paddingVertical: 15,
-    paddingHorizontal: 30,
-    borderRadius: 10,
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-  },
-  buttonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
+  map: {
+    width: Dimensions.get('window').width,
+    height: Dimensions.get('window').height
+  }
 });
+
+

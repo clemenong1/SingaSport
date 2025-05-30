@@ -20,7 +20,7 @@ export default function TabLayout() {
   return (
 <Tabs
   screenOptions={{
-    headerShown: true, // <-- fix: always show header
+    headerShown: true,
     tabBarActiveTintColor: '#d32f2f',
     tabBarInactiveTintColor: '#8e8e93',
     tabBarStyle: {
@@ -36,7 +36,7 @@ export default function TabLayout() {
       fontWeight: '600',
     },
     headerStyle: {
-      height: 60,
+      height: 110,
       backgroundColor: '#fff',
       borderBottomColor: '#e0e0e0',
       borderBottomWidth: 1,
@@ -46,8 +46,12 @@ export default function TabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          headerTitle: 'Tab One',
-          tabBarLabel: 'Tab',
+          headerTitle: 'Find your court',
+          headerTitleStyle: {
+            fontSize: 24,
+            fontWeight: 'bold',
+          },
+          tabBarLabel: 'Map',
           tabBarIcon: ({ color }) => <TabBarIcon name="code" color={color} />,
           headerRight: () => (
             <Link href="/modal" asChild>
@@ -68,7 +72,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="two"
         options={{
-          headerTitle: 'Tab One',
+          headerTitle: 'Tab 2',
           tabBarLabel: 'DataBase',
           tabBarIcon: ({ color }) => <TabBarIcon name="code" color={color} />,
         }}
@@ -76,7 +80,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="three"
         options={{
-          headerTitle: 'Tab One',
+          headerTitle: 'Tab 3',
           tabBarLabel: 'Storage',
           tabBarIcon: ({ color }) => <TabBarIcon name="code" color={color} />,
         }}
@@ -84,8 +88,8 @@ export default function TabLayout() {
       <Tabs.Screen
         name="four"
         options={{
-          headerTitle: 'Tab One',
-          tabBarLabel: 'Functions',
+          headerTitle: 'Your Profile',
+          tabBarLabel: 'Profile',
           tabBarIcon: ({ color }) => <TabBarIcon name="code" color={color} />,
         }}
       />
