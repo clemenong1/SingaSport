@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import {
   View,
   StyleSheet,
@@ -8,18 +8,25 @@ import {
   Dimensions,
   ActivityIndicator,
   Alert,
+  TouchableOpacity,
 } from 'react-native';
-import MapView, { Marker, PROVIDER_GOOGLE, Region } from 'react-native-maps';
+import { Ionicons } from '@expo/vector-icons';
+import MapView, { Marker, PROVIDER_GOOGLE, Region, MapView as MapViewType } from 'react-native-maps';
 import * as Location from 'expo-location';
 import axios from 'axios';
 
-const GOOGLE_API_KEY = 'AIzaSyB01KvNeXC7aRXmCAA3z6aKO4keIG7U244'; // Put your key here
+const GOOGLE_API_KEY = 'AIzaSyB01KvNeXC7aRXmCAA3z6aKO4keIG7U244';
+const mapRef = useRef<MapViewType>(null);
 
 interface Court {
   place_id: string;
   name: string;
   latitude: number;
   longitude: number;
+  address?: string;
+  rating?: number;
+  userRatingsTotal?: number;
+  isOpen?: boolean;
 }
 
 export default function MapScreen(): React.JSX.Element {
@@ -68,6 +75,10 @@ export default function MapScreen(): React.JSX.Element {
         name: place.name,
         latitude: place.geometry.location.lat,
         longitude: place.geometry.location.lng,
+        address: place.vicinity,
+        rating: place.rating,
+        userRatingsTotal: place.user_ratings_total,
+        isOpen: place.opening_hours?.open_now,
       }));
 
       setCourts(results);
@@ -102,16 +113,12 @@ export default function MapScreen(): React.JSX.Element {
         onChangeText={setSearch}
       />
       <MapView
+        ref={mapRef}
         provider={PROVIDER_GOOGLE}
         style={styles.map}
         region={region}
         showsUserLocation
       >
-        <Marker
-          coordinate={region}
-          title="You are here"
-          description="Your current location"
-        />
         {courts.map((court) => (
           <Marker
             key={court.place_id}
@@ -123,6 +130,20 @@ export default function MapScreen(): React.JSX.Element {
           />
         ))}
       </MapView>
+
+      <View style={styles.locateButtonContainer}>
+      <TouchableOpacity
+        onPress={() => {
+          if (region && mapRef.current) {
+            mapRef.current.animateToRegion(region, 1000); // 1000ms animation
+          }
+        }}
+        style={styles.locateButton}
+      >
+        <Ionicons name="locate" size={24} color="white" />
+      </TouchableOpacity>
+      </View>
+
       <FlatList
         data={courts.filter((c) =>
           c.name.toLowerCase().includes(search.toLowerCase())
@@ -130,11 +151,23 @@ export default function MapScreen(): React.JSX.Element {
         keyExtractor={(item) => item.place_id}
         style={styles.list}
         renderItem={({ item }) => (
-          <View style={styles.card}>
-            <Text style={styles.name}>{item.name}</Text>
-          </View>
-        )}
+        <View style={styles.card}>
+          <Text style={styles.name}>{item.name}</Text>
+          {item.address && <Text style={styles.address}>{item.address}</Text>}
+          {item.rating && (
+            <Text style={styles.rating}>
+              ⭐ {item.rating} ({item.userRatingsTotal ?? 0} reviews)
+            </Text>
+          )}
+          {item.isOpen !== undefined && (
+            <Text style={styles.openStatus}>
+              {item.isOpen ? '🟢 Open now' : '🔴 Closed'}
+            </Text>
+          )}
+        </View>
+      )}
       />
+
     </View>
   );
 }
@@ -173,6 +206,17 @@ const styles = StyleSheet.create({
   name: {
     fontSize: 16,
     fontWeight: '500',
+  },locateButtonContainer: {
+    position: 'absolute',
+    bottom: 20,
+    right: 20,
+    zIndex: 3,
+  },
+  locateButton: {
+    backgroundColor: '#1e90ff',
+    padding: 12,
+    borderRadius: 30,
+    elevation: 4,
   },
 });
 
