@@ -16,7 +16,6 @@ import * as Location from 'expo-location';
 import axios from 'axios';
 
 const GOOGLE_API_KEY = 'AIzaSyB01KvNeXC7aRXmCAA3z6aKO4keIG7U244';
-const mapRef = useRef<MapViewType>(null);
 
 interface Court {
   place_id: string;
@@ -30,9 +29,28 @@ interface Court {
 }
 
 export default function MapScreen(): React.JSX.Element {
+  const mapRef = useRef<MapViewType>(null);
   const [region, setRegion] = useState<Region | null>(null);
   const [courts, setCourts] = useState<Court[]>([]);
   const [search, setSearch] = useState<string>('');
+  const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
+
+
+  const calculateDistanceKm = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
+    const toRad = (value: number) => (value * Math.PI) / 180;
+  
+    const R = 6371; // Earth radius in km
+    const dLat = toRad(lat2 - lat1);
+    const dLon = toRad(lon2 - lon1);
+  
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+      Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+  };
 
   useEffect(() => {
     (async () => {
@@ -44,6 +62,8 @@ export default function MapScreen(): React.JSX.Element {
 
       const location = await Location.getCurrentPositionAsync({});
       const { latitude, longitude } = location.coords;
+      
+      setUserLocation({ latitude, longitude });
 
       setRegion({
         latitude,
@@ -104,6 +124,18 @@ export default function MapScreen(): React.JSX.Element {
     );
   }
 
+  const filteredAndSortedCourts = courts
+    .filter((c) =>
+      c.name.toLowerCase().includes(search.toLowerCase())
+    )
+    .sort((a, b) => {
+      if (!userLocation) return 0; // Don't sort if no user location
+      const distA = calculateDistanceKm(userLocation.latitude, userLocation.longitude, a.latitude, a.longitude);
+      const distB = calculateDistanceKm(userLocation.latitude, userLocation.longitude, b.latitude, b.longitude);
+      return distA - distB; // Nearest first
+    });
+
+
   return (
     <View style={styles.container}>
       <TextInput
@@ -145,13 +177,11 @@ export default function MapScreen(): React.JSX.Element {
       </View>
 
       <FlatList
-        data={courts.filter((c) =>
-          c.name.toLowerCase().includes(search.toLowerCase())
-        )}
+        data={filteredAndSortedCourts}
         keyExtractor={(item) => item.place_id}
         style={styles.list}
         renderItem={({ item }) => (
-        <View style={styles.card}>
+          <View style={styles.card}>
           <Text style={styles.name}>{item.name}</Text>
           {item.address && <Text style={styles.address}>{item.address}</Text>}
           {item.rating && (
@@ -162,6 +192,11 @@ export default function MapScreen(): React.JSX.Element {
           {item.isOpen !== undefined && (
             <Text style={styles.openStatus}>
               {item.isOpen ? '🟢 Open now' : '🔴 Closed'}
+            </Text>
+          )}
+          {userLocation && (
+            <Text style={styles.distance}>
+              📍 {calculateDistanceKm(userLocation.latitude, userLocation.longitude, item.latitude, item.longitude).toFixed(2)} km away
             </Text>
           )}
         </View>
