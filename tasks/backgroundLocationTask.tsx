@@ -15,7 +15,7 @@ interface Court {
 }
 
 const basketballCourts: Court[] = [
-  { id: 'VP Sheltered Basketball Court', latitude: 1.4296513, longitude: 103.7974786, radius: 20 },
+  { id: 'VP Sheltered Basketball Court', latitude: 1.4296513, longitude: 103.7974786, radius: 100 },
   { id: 'court2', latitude: 1.305, longitude: 103.805, radius: 100 },
 ];
 
