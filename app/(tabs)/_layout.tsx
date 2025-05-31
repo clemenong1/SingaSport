@@ -72,24 +72,16 @@ export default function TabLayout() {
       <Tabs.Screen
         name="two"
         options={{
-          headerTitle: 'Tab 2',
-          tabBarLabel: 'DataBase',
+          headerTitle: 'Add your post',
+          tabBarLabel: 'Contribute',
           tabBarIcon: ({ color }) => <TabBarIcon name="code" color={color} />,
         }}
       />
       <Tabs.Screen
         name="three"
         options={{
-          headerTitle: 'Tab 3',
-          tabBarLabel: 'Storage',
-          tabBarIcon: ({ color }) => <TabBarIcon name="code" color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="four"
-        options={{
           headerTitle: 'Your Profile',
-          tabBarLabel: 'Profile',
+          tabBarLabel: 'You',
           tabBarIcon: ({ color }) => <TabBarIcon name="code" color={color} />,
         }}
       />
