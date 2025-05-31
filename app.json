@@ -16,7 +16,17 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.clemenong1.SingaSport"
+      "bundleIdentifier": "com.clemenong1.SingaSport",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "We need your location to show nearby basketball courts.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "We need your location in the background to support geofencing.",
+        "UIBackgroundModes": [
+          "location",
+          "fetch",
+          "processing"
+        ],
+        "NSUserTrackingUsageDescription": "App needs permission to track your activity for personalized experiences."
+      }
     },
     "android": {
       "adaptiveIcon": {
