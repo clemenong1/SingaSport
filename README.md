@@ -5,7 +5,7 @@ crowd data, and social features to enhance the playing experience and build a co
 
 ---
 
-This is a mobile application built using [Expo](https://expo.dev/) and [React Native](https://reactnative.dev/). We will be using an Android emulator to test.
+This is a mobile application built using [Expo](https://expo.dev/) and [React Native](https://reactnative.dev/). 
 ---
 
 ## 🚀 Getting Started
@@ -17,32 +17,30 @@ Before you begin, ensure you have the following installed and set up:
 - [Node.js](https://nodejs.org/)
 - [Expo CLI](https://docs.expo.dev/get-started/installation/)
 - [Expo account](https://expo.dev/signup)
-- [Android Studio](https://developer.android.com/studio) (for Android emulator)
 
 ### 📦 Installation
 
 1. **Clone the repository:**
 
-   ```bash
-   git clone https://github.com/clemenong1/SingaSport.git
-   cd your-repo-name
-   ```
+    ```bash
+    git clone https://github.com/clemenong1/SingaSport.git
+    cd your-repo-name
+    ```
 
 2. **Install dependencies (if needed):**
 
-   ```bash
-   npm install
-   ```
+    ```bash
+    npm install
+    ```
 
-3. **Run the app on Android emulator:**
+2. **Install dependencies (if needed):**
 
-   ```bash
-   npx expo run:android
-   ```
+    ```bash
+    npx expo login
+    ```
+    > You will be prompted to log into your Expo account, fill in the details.
 
-   > This will automatically launch the Android Studio emulator. You can then either **log in** or **create a new account** to use the app.
-
-4. **OR run the app on your physical device (Expo Go):**
+5. **Run the app on your physical device (Expo Go):**
 
    - Download the **Expo Go** app from the App Store (iOS) or Play Store (Android).
    - Start the development server:
@@ -50,8 +48,18 @@ Before you begin, ensure you have the following installed and set up:
      ```bash
      npx expo start
      ```
+     OR
+
+     ```bash
+     npx expo start --tunnel
+     ```
 
    - Scan the QR code displayed in the terminal which opens the Expo Go App.
+
+6. **OR Run the app on a simulator:**
+
+    - Ensure that your simulators in the background is running
+    - Click 'i' for IOS simulator or 'a' for android simulator.
 
 ---
 
