@@ -50,11 +50,11 @@ Before you begin, ensure you have the following installed and set up:
      ```bash
      npx expo start
      ```
-   OR
-   
-     ```bash
-     npx expo start
-     ```
+      OR
+
+      ```bash
+      npx expo start
+      ```
 
    - Scan the QR code displayed in the terminal which opens the Expo Go App.
 
