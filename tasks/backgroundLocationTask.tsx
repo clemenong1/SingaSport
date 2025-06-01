@@ -11,7 +11,7 @@ interface Court {
   id: string;
   latitude: number;
   longitude: number;
-  radius: number; // in meters
+  radius: number;
 }
 
 const basketballCourts: Court[] = [
@@ -19,7 +19,6 @@ const basketballCourts: Court[] = [
   { id: 'court2', latitude: 1.305, longitude: 103.805, radius: 100 },
 ];
 
-// To track if user is inside geofence to avoid duplicate logs
 const insideStates: Record<string, boolean> = {};
 
 TaskManager.defineTask(
