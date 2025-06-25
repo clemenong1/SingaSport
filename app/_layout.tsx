@@ -4,15 +4,12 @@ import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import React, { useEffect, useState } from 'react';
-import * as Location from 'expo-location';
 import * as Notifications from 'expo-notifications';
 import 'react-native-reanimated';
 import { useColorScheme } from '@/components/useColorScheme';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { auth } from '../FirebaseConfig';
 import { ActivityIndicator, View } from 'react-native';
-
-import '../tasks/backgroundLocationTask';
 
 export {
   ErrorBoundary,
@@ -46,40 +43,6 @@ export default function RootLayout() {
 
     return unsubscribe;
   }, []);
-
-  useEffect(() => {
-    async function startBackgroundLocation() {
-      const { status: fgStatus } = await Location.requestForegroundPermissionsAsync();
-      if (fgStatus !== 'granted') {
-        console.warn('Foreground location permission denied');
-        return;
-      }
-
-      const { status: bgStatus } = await Location.requestBackgroundPermissionsAsync();
-      if (bgStatus !== 'granted') {
-        console.warn('Background location permission denied');
-        return;
-      }
-
-      const hasStarted = await Location.hasStartedLocationUpdatesAsync('background-location-task');
-      if (!hasStarted) {
-        await Location.startLocationUpdatesAsync('background-location-task', {
-          accuracy: Location.Accuracy.Highest,
-          distanceInterval: 50,
-          showsBackgroundLocationIndicator: true,
-          foregroundService: {
-            notificationTitle: 'Tracking location',
-            notificationBody: 'Location tracking in background',
-          },
-        });
-        console.log('Background location tracking started');
-      }
-    }
-    
-    if (user) {
-      startBackgroundLocation();
-    }
-  }, [user]);
 
   useEffect(() => {
     async function registerForPushNotificationsAsync() {
