@@ -140,7 +140,8 @@ export default function MapScreen(): React.JSX.Element {
     <View style={styles.container}>
       <TextInput
         style={styles.search}
-        placeholder="Search basketball courts (optional)"
+        placeholder="Search basketball courts"
+        placeholderTextColor="#666"
         value={search}
         onChangeText={setSearch}
       />
@@ -241,7 +242,27 @@ const styles = StyleSheet.create({
   name: {
     fontSize: 16,
     fontWeight: '500',
-  },locateButtonContainer: {
+  },
+  address: {
+    fontSize: 14,
+    color: '#666',
+    marginTop: 2,
+  },
+  rating: {
+    fontSize: 14,
+    color: '#888',
+    marginTop: 2,
+  },
+  openStatus: {
+    fontSize: 14,
+    marginTop: 2,
+  },
+  distance: {
+    fontSize: 14,
+    color: '#007BFF',
+    marginTop: 2,
+  },
+  locateButtonContainer: {
     position: 'absolute',
     bottom: 20,
     right: 20,
