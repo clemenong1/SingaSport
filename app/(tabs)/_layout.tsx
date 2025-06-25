@@ -41,16 +41,17 @@ export default function TabLayout() {
       borderBottomColor: '#e0e0e0',
       borderBottomWidth: 1,
     },
+    headerTitleStyle: {
+      fontSize: 24,
+      fontWeight: 'bold',
+      color: '#333',
+    },
   }}
       >
       <Tabs.Screen
         name="index"
         options={{
           headerTitle: 'Find your court',
-          headerTitleStyle: {
-            fontSize: 24,
-            fontWeight: 'bold',
-          },
           tabBarLabel: 'Map',
           tabBarIcon: ({ color }) => <TabBarIcon name="code" color={color} />,
           headerRight: () => (
