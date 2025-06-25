@@ -97,6 +97,7 @@ function RootLayoutNav({ user }: { user: User | null }) {
           <>
             <Stack.Screen name="(tabs)" />
             <Stack.Screen name="editProfile" options={{ presentation: 'modal' }} />
+            <Stack.Screen name="search" options={{ headerShown: false }} />
           </>
         ) : (
           // User is not signed in, show login and signup
