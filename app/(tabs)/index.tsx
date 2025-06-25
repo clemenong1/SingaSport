@@ -11,11 +11,23 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import MapView, { Marker, PROVIDER_GOOGLE, Region, MapView as MapViewType } from 'react-native-maps';
+import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
+import type { Region } from 'react-native-maps';
 import * as Location from 'expo-location';
+import * as geolib from 'geolib';
+import * as Notifications from 'expo-notifications';
 import axios from 'axios';
 
 const GOOGLE_API_KEY = 'AIzaSyB01KvNeXC7aRXmCAA3z6aKO4keIG7U244';
+
+// Add your geofence data
+const basketballCourts = [
+  { id: 'VP Sheltered Basketball Court', latitude: 1.4296513, longitude: 103.7974786, radius: 100 },
+  { id: 'court2', latitude: 1.305, longitude: 103.805, radius: 100 },
+  { id: 'clemen house', latitude: 1.4284690, longitude: 103.7926025, radius: 1000 },
+];
+
+const insideStates: Record<string, boolean> = {};
 
 interface Court {
   place_id: string;
@@ -29,12 +41,11 @@ interface Court {
 }
 
 export default function MapScreen(): React.JSX.Element {
-  const mapRef = useRef<MapViewType>(null);
+  const mapRef = useRef<MapView>(null);
   const [region, setRegion] = useState<Region | null>(null);
   const [courts, setCourts] = useState<Court[]>([]);
   const [search, setSearch] = useState<string>('');
   const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
-
 
   const calculateDistanceKm = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
     const toRad = (value: number) => (value * Math.PI) / 180;
@@ -54,17 +65,21 @@ export default function MapScreen(): React.JSX.Element {
 
   useEffect(() => {
     (async () => {
+      // Request notification permissions
+      const { status: notificationStatus } = await Notifications.requestPermissionsAsync();
+      
+      // Request location permissions
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
         Alert.alert('Permission denied', 'Location access is required.');
         return;
       }
 
+      // Get initial location
       const location = await Location.getCurrentPositionAsync({});
       const { latitude, longitude } = location.coords;
       
       setUserLocation({ latitude, longitude });
-
       setRegion({
         latitude,
         longitude,
@@ -73,6 +88,62 @@ export default function MapScreen(): React.JSX.Element {
       });
 
       fetchNearbyCourts(latitude, longitude);
+
+      // Start foreground location tracking
+      const locationSubscription = Location.watchPositionAsync(
+        {
+          accuracy: Location.Accuracy.Balanced,
+          timeInterval: 5000, // Update every 5 seconds
+          distanceInterval: 10, // Update every 10 meters
+        },
+        (location) => {
+          const { latitude, longitude } = location.coords;
+          
+          // Update user location state
+          setUserLocation({ latitude, longitude });
+          
+          // Check geofences
+          for (const court of basketballCourts) {
+            const isInside = geolib.isPointWithinRadius(
+              { latitude, longitude },
+              { latitude: court.latitude, longitude: court.longitude },
+              court.radius
+            );
+
+            if (isInside && !insideStates[court.id]) {
+              insideStates[court.id] = true;
+              console.log(`Entered geofence: ${court.id}`);
+
+              // Show notification
+              Notifications.scheduleNotificationAsync({
+                content: {
+                  title: `Entered ${court.id}`,
+                  body: `You are inside the geofence for ${court.id}`,
+                },
+                trigger: null,
+              });
+
+            } else if (!isInside && insideStates[court.id]) {
+              insideStates[court.id] = false;
+              console.log(`Exited geofence: ${court.id}`);
+
+              // Show notification
+              Notifications.scheduleNotificationAsync({
+                content: {
+                  title: `Exited ${court.id}`,
+                  body: `You left the geofence for ${court.id}`,
+                },
+                trigger: null,
+              });
+            }
+          }
+        }
+      );
+
+      // Cleanup subscription when component unmounts
+      return () => {
+        locationSubscription.then(sub => sub.remove());
+      };
     })();
   }, []);
 
