@@ -48,6 +48,7 @@ export default function MapScreen(): React.JSX.Element {
   const [courts, setCourts] = useState<Court[]>([]);
   const [search, setSearch] = useState<string>('');
   const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [selectedCourtId, setSelectedCourtId] = useState<string | null>(null);
 
   const calculateDistanceKm = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
     const toRad = (value: number) => (value * Math.PI) / 180;
@@ -189,6 +190,30 @@ export default function MapScreen(): React.JSX.Element {
     }
   };
 
+  // Function to navigate to a specific court on the map
+  const navigateToCourtOnMap = (court: Court) => {
+    if (mapRef.current) {
+      const newRegion = {
+        latitude: court.latitude,
+        longitude: court.longitude,
+        latitudeDelta: 0.005, // Zoom in closer to the court
+        longitudeDelta: 0.005,
+      };
+      
+      mapRef.current.animateToRegion(newRegion, 1000);
+      
+      // Highlight the selected court temporarily
+      setSelectedCourtId(court.place_id);
+      
+      // Clear the selection after 3 seconds
+      setTimeout(() => {
+        setSelectedCourtId(null);
+      }, 3000);
+      
+      console.log(`Navigating to ${court.name}`);
+    }
+  };
+
   if (!region) {
     return (
       <View style={styles.loadingContainer}>
@@ -233,6 +258,8 @@ export default function MapScreen(): React.JSX.Element {
               longitude: court.longitude,
             }}
             title={court.name}
+            description={court.address}
+            pinColor={selectedCourtId === court.place_id ? '#FF6B6B' : '#FF0000'}
           />
         ))}
       </MapView>
@@ -255,7 +282,11 @@ export default function MapScreen(): React.JSX.Element {
         keyExtractor={(item) => item.place_id}
         style={styles.list}
         renderItem={({ item }) => (
-          <View style={styles.card}>
+          <TouchableOpacity 
+            style={styles.card}
+            onPress={() => navigateToCourtOnMap(item)}
+            activeOpacity={0.7}
+          >
             <Text style={styles.name}>{item.name}</Text>
             {item.address && <Text style={styles.address}>{item.address}</Text>}
             {item.rating && (
@@ -273,7 +304,13 @@ export default function MapScreen(): React.JSX.Element {
                 📍 {calculateDistanceKm(userLocation.latitude, userLocation.longitude, item.latitude, item.longitude).toFixed(2)} km away
               </Text>
             )}
-          </View>
+            
+            {/* Add a visual indicator that the item is tappable */}
+            <View style={styles.navigationHint}>
+              <Ionicons name="chevron-forward" size={16} color="#007BFF" />
+              <Text style={styles.navigationText}>Tap to view on map</Text>
+            </View>
+          </TouchableOpacity>
         )}
       />
     </View>
@@ -320,12 +357,25 @@ const styles = StyleSheet.create({
   },
   list: {
     flex: 1,
-    backgroundColor: 'white',
+    backgroundColor: '#f5f5f5',
+    paddingTop: 8,
   },
   card: {
     padding: 12,
     borderBottomWidth: 1,
     borderColor: '#ddd',
+    backgroundColor: 'white',
+    marginHorizontal: 8,
+    marginVertical: 4,
+    borderRadius: 8,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.22,
+    shadowRadius: 2.22,
   },
   name: {
     fontSize: 16,
@@ -361,5 +411,15 @@ const styles = StyleSheet.create({
     padding: 12,
     borderRadius: 30,
     elevation: 4,
+  },
+  navigationHint: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  navigationText: {
+    fontSize: 14,
+    color: '#007BFF',
+    marginLeft: 4,
   },
 });
