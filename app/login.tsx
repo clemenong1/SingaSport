@@ -1,5 +1,5 @@
 import { auth } from '../FirebaseConfig';
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
+import { signInWithEmailAndPassword } from 'firebase/auth';
 import React, { useState } from 'react';
 import {
   SafeAreaView,
@@ -7,29 +7,27 @@ import {
   TextInput,
   TouchableOpacity,
   StyleSheet,
-  View
+  View,
+  Alert
 } from 'react-native';
 import { router } from 'expo-router';
 
-export default function Login() {
+export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const signIn = async () => {
+    setLoading(true);
     try {
-      const user = await signInWithEmailAndPassword(auth, email, password);
-      if (user) router.replace('/(tabs)');
+      await signInWithEmailAndPassword(auth, email, password);
+      console.log('Sign in successful');
+      // Navigate to tabs
+      router.replace('/(tabs)');
     } catch (error: any) {
-      alert('Sign in failed: ' + error.message);
-    }
-  };
-
-  const signUp = async () => {
-    try {
-      const user = await createUserWithEmailAndPassword(auth, email, password);
-      if (user) router.replace('/(tabs)');
-    } catch (error: any) {
-      alert('Sign up failed: ' + error.message);
+      Alert.alert('Sign In Failed', error.message);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -56,12 +54,21 @@ export default function Login() {
         secureTextEntry
       />
 
-      <TouchableOpacity style={styles.button} onPress={signIn}>
-        <Text style={styles.buttonText}>Log In</Text>
+      <TouchableOpacity 
+        style={[styles.button, loading && styles.buttonDisabled]} 
+        onPress={signIn}
+        disabled={loading}
+      >
+        <Text style={styles.buttonText}>
+          {loading ? 'Signing In...' : 'Log In'}
+        </Text>
       </TouchableOpacity>
 
-      <TouchableOpacity style={[styles.button, styles.secondaryButton]} onPress={signUp}>
-        <Text style={styles.secondaryButtonText}>Create an Account</Text>
+      <TouchableOpacity 
+        style={styles.linkButton} 
+        onPress={() => router.push('/signup')}
+      >
+        <Text style={styles.linkText}>Don't have an account? Sign Up</Text>
       </TouchableOpacity>
     </SafeAreaView>
   );
@@ -97,18 +104,22 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     marginBottom: 15,
   },
+  buttonDisabled: {
+    backgroundColor: '#ccc',
+  },
   buttonText: {
     color: '#fff',
     fontWeight: 'bold',
     fontSize: 16,
     textAlign: 'center',
   },
-  secondaryButton: {
-    backgroundColor: '#eee',
+  linkButton: {
+    paddingVertical: 10,
   },
-  secondaryButtonText: {
-    color: '#333',
+  linkText: {
+    color: '#0066cc',
     fontSize: 16,
     textAlign: 'center',
+    textDecorationLine: 'underline',
   },
-});
+}); 

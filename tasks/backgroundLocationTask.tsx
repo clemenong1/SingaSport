@@ -1,6 +1,6 @@
 // backgroundLocationTask.ts
 import * as TaskManager from 'expo-task-manager';
-import geolib from 'geolib';
+import * as geolib from 'geolib';
 import type { TaskManagerTaskBody } from 'expo-task-manager';
 import type { LocationObject } from 'expo-location';
 import * as Notifications from 'expo-notifications';
