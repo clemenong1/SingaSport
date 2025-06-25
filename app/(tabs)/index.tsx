@@ -17,6 +17,8 @@ import * as Location from 'expo-location';
 import * as geolib from 'geolib';
 import * as Notifications from 'expo-notifications';
 import axios from 'axios';
+import { router } from 'expo-router';
+
 
 const GOOGLE_API_KEY = 'AIzaSyB01KvNeXC7aRXmCAA3z6aKO4keIG7U244';
 
@@ -220,27 +222,27 @@ export default function MapScreen(): React.JSX.Element {
     );
   }
 
-  const filteredAndSortedCourts = courts
-    .filter((c) =>
-      c.name.toLowerCase().includes(search.toLowerCase())
-    )
-    .sort((a, b) => {
-      if (!userLocation) return 0; 
-      const distA = calculateDistanceKm(userLocation.latitude, userLocation.longitude, a.latitude, a.longitude);
-      const distB = calculateDistanceKm(userLocation.latitude, userLocation.longitude, b.latitude, b.longitude);
-      return distA - distB;
-    });
-
+  // Sort courts by distance from user
+  const sortedCourts = courts.sort((a, b) => {
+    if (!userLocation) return 0; 
+    const distA = calculateDistanceKm(userLocation.latitude, userLocation.longitude, a.latitude, a.longitude);
+    const distB = calculateDistanceKm(userLocation.latitude, userLocation.longitude, b.latitude, b.longitude);
+    return distA - distB;
+  });
 
   return (
     <View style={styles.container}>
-      <TextInput
+      <TouchableOpacity 
         style={styles.search}
-        placeholder="Search basketball courts"
-        placeholderTextColor="#666"
-        value={search}
-        onChangeText={setSearch}
-      />
+        onPress={() => router.push('/search')}
+        activeOpacity={0.7}
+      >
+        <View style={styles.searchContent}>
+          <Ionicons name="search" size={20} color="#666" style={styles.searchIcon} />
+          <Text style={styles.searchPlaceholder}>Search basketball courts</Text>
+        </View>
+      </TouchableOpacity>
+      
       <MapView
         ref={mapRef}
         provider={PROVIDER_GOOGLE}
@@ -248,7 +250,7 @@ export default function MapScreen(): React.JSX.Element {
         region={region}
         showsUserLocation
       >
-        {courts.map((court) => (
+        {sortedCourts.map((court) => (
           <Marker
             key={court.place_id}
             coordinate={{
@@ -263,20 +265,20 @@ export default function MapScreen(): React.JSX.Element {
       </MapView>
 
       <View style={styles.locateButtonContainer}>
-      <TouchableOpacity
-        onPress={() => {
-          if (region && mapRef.current) {
-            mapRef.current.animateToRegion(region, 1000);
-          }
-        }}
-        style={styles.locateButton}
-      >
-        <Ionicons name="locate" size={24} color="white" />
-      </TouchableOpacity>
+        <TouchableOpacity
+          onPress={() => {
+            if (region && mapRef.current) {
+              mapRef.current.animateToRegion(region, 1000);
+            }
+          }}
+          style={styles.locateButton}
+        >
+          <Ionicons name="locate" size={24} color="white" />
+        </TouchableOpacity>
       </View>
 
       <FlatList
-        data={filteredAndSortedCourts}
+        data={sortedCourts}
         keyExtractor={(item) => item.place_id}
         style={styles.list}
         renderItem={({ item }) => (
@@ -311,7 +313,6 @@ export default function MapScreen(): React.JSX.Element {
           </TouchableOpacity>
         )}
       />
-
     </View>
   );
 }
@@ -328,6 +329,22 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
     padding: 10,
     borderRadius: 8,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  searchContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  searchIcon: {
+    marginRight: 8,
+  },
+  searchPlaceholder: {
+    color: '#666',
+    fontSize: 16,
   },
   map: {
     width: Dimensions.get('window').width,
