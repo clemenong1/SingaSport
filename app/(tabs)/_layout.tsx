@@ -49,11 +49,11 @@ export default function TabLayout() {
   }}
       >
       <Tabs.Screen
-        name="index"
+        name="main"
         options={{
           headerTitle: 'Find your court',
           tabBarLabel: 'Map',
-          tabBarIcon: ({ color }) => <TabBarIcon name="code" color={color} />,
+          tabBarIcon: ({ color }) => <TabBarIcon name="map" color={color} />,
           headerRight: () => (
             <Link href="/modal" asChild>
               <Pressable>
@@ -75,7 +75,7 @@ export default function TabLayout() {
         options={{
           headerTitle: 'Add your post',
           tabBarLabel: 'Contribute',
-          tabBarIcon: ({ color }) => <TabBarIcon name="code" color={color} />,
+          tabBarIcon: ({ color }) => <TabBarIcon name="plus" color={color} />,
         }}
       />
       <Tabs.Screen
@@ -83,7 +83,7 @@ export default function TabLayout() {
         options={{
           headerTitle: 'Your Profile',
           tabBarLabel: 'You',
-          tabBarIcon: ({ color }) => <TabBarIcon name="code" color={color} />,
+          tabBarIcon: ({ color }) => <TabBarIcon name="user" color={color} />,
         }}
       />
     </Tabs>

@@ -84,7 +84,7 @@ export default function SignUpScreen() {
 
       console.log('Account created successfully');
       Alert.alert('Success', 'Account created successfully!', [
-        { text: 'OK', onPress: () => router.replace('/(tabs)') }
+        { text: 'OK', onPress: () => router.replace('/(tabs)/main') }
       ]);
       
     } catch (error: any) {
