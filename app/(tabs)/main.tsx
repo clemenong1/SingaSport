@@ -19,6 +19,7 @@ import * as Notifications from 'expo-notifications';
 import { router } from 'expo-router';
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from '../../src/services/FirebaseConfig';
+import { isCourtCurrentlyOpen } from '../../src/utils';
 
 
 // Add your geofence data
@@ -38,9 +39,10 @@ interface Court {
   address?: string;
   rating?: number;
   userRatingsTotal?: number;
-  isOpen?: boolean;
+  isOpen?: boolean | null;
   peopleNumber?: number;
   geohash?: string;
+  openingHours?: string[] | null;
 }
 
 export default function MapScreen(): React.JSX.Element {
@@ -174,6 +176,9 @@ export default function MapScreen(): React.JSX.Element {
           }
         }
         
+        // Determine if the court is currently open based on opening hours
+        const currentlyOpen = isCourtCurrentlyOpen(data.openingHours);
+        
         return {
           place_id: doc.id,
           name: data.name || 'Unknown Court',
@@ -182,9 +187,10 @@ export default function MapScreen(): React.JSX.Element {
           address: data.address || 'Address not available',
           rating: data.rating,
           userRatingsTotal: data.userRatingsTotal,
-          isOpen: data.isOpen,
+          isOpen: currentlyOpen,
           peopleNumber: data.peopleNumber || 0,
           geohash: data.geohash,
+          openingHours: data.openingHours,
         };
       });
 
@@ -203,28 +209,14 @@ export default function MapScreen(): React.JSX.Element {
     }
   };
 
-  // Function to navigate to a specific court on the map
-  const navigateToCourtOnMap = (court: Court) => {
-    if (mapRef.current) {
-      const newRegion = {
-        latitude: court.latitude,
-        longitude: court.longitude,
-        latitudeDelta: 0.005, // Zoom in closer to the court
-        longitudeDelta: 0.005,
-      };
-      
-      mapRef.current.animateToRegion(newRegion, 1000);
-      
-      // Highlight the selected court temporarily
-      setSelectedCourtId(court.place_id);
-      
-      // Clear the selection after 3 seconds
-      setTimeout(() => {
-        setSelectedCourtId(null);
-      }, 3000);
-      
-      console.log(`Navigating to ${court.name}`);
-    }
+  // Function to navigate to court info page
+  const navigateToCourtInfo = (court: Court) => {
+    router.push({
+      pathname: '/courtInfo' as any,
+      params: {
+        courtData: JSON.stringify(court)
+      }
+    });
   };
 
   if (!region) {
@@ -273,6 +265,7 @@ export default function MapScreen(): React.JSX.Element {
             title={court.name}
             description={court.address}
             pinColor={selectedCourtId === court.place_id ? '#FF6B6B' : '#FF0000'}
+            onPress={() => navigateToCourtInfo(court)}
           />
         ))}
       </MapView>
@@ -297,7 +290,7 @@ export default function MapScreen(): React.JSX.Element {
         renderItem={({ item }) => (
           <TouchableOpacity 
             style={styles.card}
-            onPress={() => navigateToCourtOnMap(item)}
+            onPress={() => navigateToCourtInfo(item)}
             activeOpacity={0.7}
           >
             <Text style={styles.name}>{item.name}</Text>
@@ -307,9 +300,14 @@ export default function MapScreen(): React.JSX.Element {
                 ⭐ {item.rating} ({item.userRatingsTotal ?? 0} reviews)
               </Text>
             )}
-            {item.isOpen !== undefined && (
+            {item.isOpen !== undefined && item.isOpen !== null && (
               <Text style={styles.openStatus}>
                 {item.isOpen ? '🟢 Open now' : '🔴 Closed'}
+              </Text>
+            )}
+            {item.isOpen === null && (
+              <Text style={styles.openStatusUnknown}>
+                ⏰ Hours not available
               </Text>
             )}
             {item.peopleNumber !== undefined && (
@@ -326,7 +324,7 @@ export default function MapScreen(): React.JSX.Element {
             {/* Add a visual indicator that the item is tappable */}
             <View style={styles.navigationHint}>
               <Ionicons name="chevron-forward" size={16} color="#007BFF" />
-              <Text style={styles.navigationText}>Tap to view on map</Text>
+              <Text style={styles.navigationText}>Tap for court details</Text>
             </View>
           </TouchableOpacity>
         )}
@@ -411,6 +409,11 @@ const styles = StyleSheet.create({
   },
   openStatus: {
     fontSize: 14,
+    marginTop: 2,
+  },
+  openStatusUnknown: {
+    fontSize: 14,
+    color: '#888',
     marginTop: 2,
   },
   peopleCount: {
