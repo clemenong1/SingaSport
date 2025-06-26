@@ -46,7 +46,7 @@ export default function CompleteProfileScreen() {
     const user = auth.currentUser;
     if (!user) {
       Alert.alert('Error', 'No user found. Please sign in again.');
-      router.replace('/login');
+      router.replace('/');
       return;
     }
 
