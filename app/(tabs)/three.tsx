@@ -1,9 +1,9 @@
 import { StyleSheet, TouchableOpacity, View, Text, ScrollView, Image, Alert } from 'react-native';
-import { auth } from '../../FirebaseConfig';
+import { auth } from '@/services/FirebaseConfig';
 import { signOut } from 'firebase/auth';
 import { router, useFocusEffect } from 'expo-router';
 import React, { useState, useCallback } from 'react';
-import { userService, UserProfile } from '../../utils/userService';
+import { userService, UserProfile } from '@/utils/userService';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 

@@ -11,8 +11,8 @@ import {
   ActivityIndicator
 } from 'react-native';
 import { router } from 'expo-router';
-import { auth } from '../FirebaseConfig';
-import { userService, UserProfile } from '../utils/userService';
+import { auth } from '@/services/FirebaseConfig';
+import { userService, UserProfile } from '@/utils/userService';
 import { Ionicons } from '@expo/vector-icons';
 
 export default function EditProfileScreen() {
