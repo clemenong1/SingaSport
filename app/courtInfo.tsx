@@ -19,6 +19,8 @@ import { Ionicons } from '@expo/vector-icons';
 import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { isCourtCurrentlyOpen } from '../src/utils';
+import { db } from '../src/services/FirebaseConfig';
+import { collection, query, orderBy, onSnapshot, Timestamp } from 'firebase/firestore';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
@@ -44,6 +46,18 @@ interface CourtPhoto {
   uploadedAt?: string;
 }
 
+interface Report {
+  id: string;
+  courtId: string;
+  courtName: string;
+  description: string;
+  user: string;
+  userName: string;
+  reportedAt: any;
+  imageCount: number;
+  status: 'open' | 'investigating' | 'resolved';
+}
+
 export default function CourtInfoScreen() {
   const params = useLocalSearchParams();
   const [court, setCourt] = useState<Court | null>(null);
@@ -51,6 +65,8 @@ export default function CourtInfoScreen() {
   const [loading, setLoading] = useState(true);
   const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   const [distance, setDistance] = useState<string>('');
+  const [reports, setReports] = useState<Report[]>([]);
+  const [loadingReports, setLoadingReports] = useState(false);
 
   useEffect(() => {
     initializeCourtInfo();
@@ -84,6 +100,9 @@ export default function CourtInfoScreen() {
         
         // Load sample photos (in real app, fetch from Firebase)
         loadCourtPhotos(courtData.place_id);
+        
+        // Load reports for this court
+        loadCourtReports(courtData.place_id);
       }
     } catch (error) {
       console.error('Error initializing court info:', error);
@@ -127,6 +146,35 @@ export default function CourtInfoScreen() {
     setPhotos(samplePhotos);
   };
 
+  const loadCourtReports = (courtId: string) => {
+    setLoadingReports(true);
+    try {
+      const reportsRef = collection(db, 'basketballCourts', courtId, 'reports');
+      const reportsQuery = query(reportsRef, orderBy('reportedAt', 'desc'));
+      
+      const unsubscribe = onSnapshot(reportsQuery, (snapshot) => {
+        const reportsData: Report[] = [];
+        snapshot.forEach((doc) => {
+          reportsData.push({
+            id: doc.id,
+            ...doc.data(),
+          } as Report);
+        });
+        setReports(reportsData);
+        setLoadingReports(false);
+      }, (error) => {
+        console.error('Error fetching reports:', error);
+        setLoadingReports(false);
+      });
+
+      // Return cleanup function for useEffect
+      return unsubscribe;
+    } catch (error) {
+      console.error('Error setting up reports listener:', error);
+      setLoadingReports(false);
+    }
+  };
+
   const openInMaps = () => {
     if (!court) return;
     
@@ -143,6 +191,17 @@ export default function CourtInfoScreen() {
     }
   };
 
+  const navigateToReport = () => {
+    if (!court) return;
+    
+    router.push({
+      pathname: '/reportPage' as any,
+      params: {
+        courtData: JSON.stringify(court)
+      }
+    });
+  };
+
   const getOpenStatusColor = (isOpen: boolean | null) => {
     if (isOpen === null) return '#888';
     return isOpen ? '#4CAF50' : '#F44336';
@@ -151,6 +210,49 @@ export default function CourtInfoScreen() {
   const getOpenStatusText = (isOpen: boolean | null) => {
     if (isOpen === null) return 'Hours not available';
     return isOpen ? 'Open now' : 'Closed';
+  };
+
+  const getReportStatusColor = (status: string) => {
+    switch (status) {
+      case 'open': return '#FF6B6B';
+      case 'investigating': return '#FFA726';
+      case 'resolved': return '#4CAF50';
+      default: return '#666';
+    }
+  };
+
+  const getReportStatusText = (status: string) => {
+    switch (status) {
+      case 'open': return 'Open';
+      case 'investigating': return 'Investigating';
+      case 'resolved': return 'Resolved';
+      default: return 'Unknown';
+    }
+  };
+
+  const formatReportDate = (reportedAt: any) => {
+    if (!reportedAt) return 'Unknown date';
+    
+    try {
+      // Handle Firestore Timestamp
+      const date = reportedAt.toDate ? reportedAt.toDate() : new Date(reportedAt);
+      const now = new Date();
+      const diffInMs = now.getTime() - date.getTime();
+      const diffInHours = diffInMs / (1000 * 60 * 60);
+      const diffInDays = diffInMs / (1000 * 60 * 60 * 24);
+
+      if (diffInHours < 1) {
+        return 'Just now';
+      } else if (diffInHours < 24) {
+        return `${Math.floor(diffInHours)}h ago`;
+      } else if (diffInDays < 7) {
+        return `${Math.floor(diffInDays)}d ago`;
+      } else {
+        return date.toLocaleDateString();
+      }
+    } catch (error) {
+      return 'Unknown date';
+    }
   };
 
   const renderPhoto = ({ item }: { item: CourtPhoto }) => (
@@ -345,6 +447,14 @@ export default function CourtInfoScreen() {
 
         {/* Action Buttons */}
         <View style={styles.section}>
+          <TouchableOpacity 
+            style={[styles.actionButton, styles.reportButton]} 
+            onPress={() => navigateToReport()}
+          >
+            <Ionicons name="flag-outline" size={20} color="#FF6B6B" />
+            <Text style={[styles.actionButtonText, styles.reportButtonText]}>Report an Issue</Text>
+          </TouchableOpacity>
+          
           <TouchableOpacity style={styles.actionButton} onPress={openInMaps}>
             <Ionicons name="navigate" size={20} color="white" />
             <Text style={styles.actionButtonText}>Get Directions</Text>
@@ -354,6 +464,54 @@ export default function CourtInfoScreen() {
             <Ionicons name="share-outline" size={20} color="#007AFF" />
             <Text style={[styles.actionButtonText, styles.secondaryButtonText]}>Share Court</Text>
           </TouchableOpacity>
+        </View>
+
+        {/* Reports Section */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Recent Reports</Text>
+          {loadingReports ? (
+            <View style={styles.reportsLoadingContainer}>
+              <ActivityIndicator size="small" color="#666" />
+              <Text style={styles.reportsLoadingText}>Loading reports...</Text>
+            </View>
+          ) : reports.length > 0 ? (
+            <View style={styles.reportsContainer}>
+              {reports.map((report) => (
+                <View key={report.id} style={styles.reportCard}>
+                  <View style={styles.reportHeader}>
+                    <View style={styles.reportStatusContainer}>
+                      <View style={[styles.reportStatusDot, { backgroundColor: getReportStatusColor(report.status) }]} />
+                      <Text style={styles.reportStatus}>{getReportStatusText(report.status)}</Text>
+                    </View>
+                    <Text style={styles.reportDate}>
+                      {formatReportDate(report.reportedAt)}
+                    </Text>
+                  </View>
+                  
+                  <Text style={styles.reportDescription}>{report.description}</Text>
+                  
+                  <View style={styles.reportFooter}>
+                    <View style={styles.reportUser}>
+                      <Ionicons name="person-circle-outline" size={16} color="#666" />
+                      <Text style={styles.reportUserName}>Reported by {report.userName}</Text>
+                    </View>
+                    {report.imageCount > 0 && (
+                      <View style={styles.reportImages}>
+                        <Ionicons name="camera-outline" size={16} color="#666" />
+                        <Text style={styles.reportImageCount}>{report.imageCount} photo{report.imageCount > 1 ? 's' : ''}</Text>
+                      </View>
+                    )}
+                  </View>
+                </View>
+              ))}
+            </View>
+          ) : (
+            <View style={styles.noReportsContainer}>
+              <Ionicons name="checkmark-circle-outline" size={48} color="#4CAF50" />
+              <Text style={styles.noReportsText}>No issues reported</Text>
+              <Text style={styles.noReportsSubtext}>This court appears to be in good condition!</Text>
+            </View>
+          )}
         </View>
 
         {/* Future Features Section */}
@@ -613,6 +771,14 @@ const styles = StyleSheet.create({
   secondaryButtonText: {
     color: '#007AFF',
   },
+  reportButton: {
+    backgroundColor: 'white',
+    borderWidth: 1,
+    borderColor: '#FF6B6B',
+  },
+  reportButtonText: {
+    color: '#FF6B6B',
+  },
   comingSoonCard: {
     backgroundColor: 'white',
     borderRadius: 12,
@@ -634,5 +800,116 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#666',
     marginLeft: 16,
+  },
+  // Reports Styles
+  reportsLoadingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'white',
+    borderRadius: 12,
+    padding: 20,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+  },
+  reportsLoadingText: {
+    fontSize: 16,
+    color: '#666',
+    marginLeft: 12,
+  },
+  reportsContainer: {
+    backgroundColor: 'transparent',
+  },
+  reportCard: {
+    backgroundColor: 'white',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+  },
+  reportHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  reportStatusContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  reportStatusDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginRight: 8,
+  },
+  reportStatus: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#333',
+  },
+  reportDate: {
+    fontSize: 12,
+    color: '#666',
+  },
+  reportDescription: {
+    fontSize: 16,
+    color: '#333',
+    lineHeight: 22,
+    marginBottom: 12,
+  },
+  reportFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  reportUser: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  reportUserName: {
+    fontSize: 12,
+    color: '#666',
+    marginLeft: 6,
+  },
+  reportImages: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  reportImageCount: {
+    fontSize: 12,
+    color: '#666',
+    marginLeft: 4,
+  },
+  noReportsContainer: {
+    backgroundColor: 'white',
+    borderRadius: 12,
+    padding: 40,
+    alignItems: 'center',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+  },
+  noReportsText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#333',
+    marginTop: 16,
+  },
+  noReportsSubtext: {
+    fontSize: 14,
+    color: '#666',
+    marginTop: 8,
+    textAlign: 'center',
   },
 }); 
