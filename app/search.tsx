@@ -15,8 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import axios from 'axios';
 import * as Location from 'expo-location';
-
-const GOOGLE_API_KEY = 'AIzaSyB01KvNeXC7aRXmCAA3z6aKO4keIG7U244';
+import { GOOGLE_PLACES_API_KEY } from '@env';
 
 interface Court {
   place_id: string;
@@ -76,7 +75,7 @@ export default function SearchScreen() {
             location: `${lat},${lng}`,
             radius: 5000, // 10km radius
             keyword: 'basketball court',
-            key: GOOGLE_API_KEY,
+            key: GOOGLE_PLACES_API_KEY,
           },
         }
       );
