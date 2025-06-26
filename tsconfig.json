@@ -4,7 +4,14 @@
     "strict": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./*"]
+      "@/*": ["src/*"],
+      "@/components/*": ["src/components/*"],
+      "@/services/*": ["src/services/*"],
+      "@/utils/*": ["src/utils/*"],
+      "@/constants/*": ["src/constants/*"],
+      "@/hooks/*": ["src/hooks/*"],
+      "@/types/*": ["src/types/*"],
+      "@/lib/*": ["src/lib/*"]
     },
     "skipLibCheck": true
   },
@@ -12,7 +19,9 @@
     "**/*.ts",
     "**/*.tsx",
     ".expo/types/**/*.ts",
-    "expo-env.d.ts"
+    "expo-env.d.ts",
+    "src/**/*.ts",
+    "src/**/*.tsx"
   ],
   "exclude": [
     "node_modules"

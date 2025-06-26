@@ -10,8 +10,8 @@ import {
   View
 } from 'react-native';
 import { router } from 'expo-router';
-import { auth } from '../FirebaseConfig';
-import { userService } from '../utils/userService';
+import { auth } from '@/services/FirebaseConfig';
+import { userService } from '@/utils/userService';
 
 export default function CompleteProfileScreen() {
   const [formData, setFormData] = useState({

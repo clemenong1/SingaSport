@@ -8,7 +8,7 @@ import * as Notifications from 'expo-notifications';
 import 'react-native-reanimated';
 import { useColorScheme } from '@/components/useColorScheme';
 import { onAuthStateChanged, User } from 'firebase/auth';
-import { auth } from '../FirebaseConfig';
+import { auth } from '@/services/FirebaseConfig';
 import { ActivityIndicator, View } from 'react-native';
 
 export {

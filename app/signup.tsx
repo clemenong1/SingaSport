@@ -1,6 +1,6 @@
-import { auth } from '../FirebaseConfig';
+import { auth } from '@/services/FirebaseConfig';
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
-import { userService } from '../utils/userService';
+import { userService } from '@/utils/userService';
 import React, { useState } from 'react';
 import {
   SafeAreaView,

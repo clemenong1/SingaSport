@@ -13,7 +13,7 @@ const API_KEY = process.env.GOOGLE_PLACES_API_KEY;
 if (!API_KEY) throw new Error('Missing GOOGLE_PLACES_API_KEY in .env');
 
 // INITIALIZE FIREBASE
-const serviceAccount = require('./serviceAccountKey.json'); // Make sure this file exists
+const serviceAccount = require('./singasport-cd006-firebase-adminsdk-fbsvc-ac174f92e1.json'); // Make sure this file exists
 
 admin.initializeApp({
   credential: cert(serviceAccount),

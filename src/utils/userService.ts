@@ -1,5 +1,5 @@
 import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
-import { db } from '../FirebaseConfig';
+import { db } from '../services/FirebaseConfig';
 
 export interface UserProfile {
   uid: string;
