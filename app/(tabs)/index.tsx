@@ -16,11 +16,10 @@ import type { Region } from 'react-native-maps';
 import * as Location from 'expo-location';
 import * as geolib from 'geolib';
 import * as Notifications from 'expo-notifications';
-import axios from 'axios';
 import { router } from 'expo-router';
+import { collection, getDocs } from 'firebase/firestore';
+import { db } from '../../src/services/FirebaseConfig';
 
-
-const GOOGLE_API_KEY = 'AIzaSyB01KvNeXC7aRXmCAA3z6aKO4keIG7U244';
 
 // Add your geofence data
 const basketballCourts = [
@@ -40,6 +39,8 @@ interface Court {
   rating?: number;
   userRatingsTotal?: number;
   isOpen?: boolean;
+  peopleNumber?: number;
+  geohash?: string;
 }
 
 export default function MapScreen(): React.JSX.Element {
@@ -152,41 +153,53 @@ export default function MapScreen(): React.JSX.Element {
 
   const fetchNearbyCourts = async (lat: number, lng: number) => {
     try {
-      const res = await axios.get(
-        'https://maps.googleapis.com/maps/api/place/nearbysearch/json',
-        {
-          params: {
-            location: `${lat},${lng}`,
-            radius: 3000,
-            keyword: 'basketball court',
-            key: GOOGLE_API_KEY,
-          },
+      console.log('Fetching courts from Firebase...');
+      const courtsCollection = collection(db, 'basketballCourts');
+      const courtSnapshot = await getDocs(courtsCollection);
+      
+      const courtsList = courtSnapshot.docs.map(doc => {
+        const data = doc.data();
+        
+        // Handle different possible location formats
+        let latitude = 0;
+        let longitude = 0;
+        
+        if (data.location) {
+          if (data.location.latitude && data.location.longitude) {
+            latitude = data.location.latitude;
+            longitude = data.location.longitude;
+          } else if (data.location._lat && data.location._long) {
+            latitude = data.location._lat;
+            longitude = data.location._long;
+          }
         }
-      );
+        
+        return {
+          place_id: doc.id,
+          name: data.name || 'Unknown Court',
+          latitude: latitude,
+          longitude: longitude,
+          address: data.address || 'Address not available',
+          rating: data.rating,
+          userRatingsTotal: data.userRatingsTotal,
+          isOpen: data.isOpen,
+          peopleNumber: data.peopleNumber || 0,
+          geohash: data.geohash,
+        };
+      });
 
-      const results = res.data.results.map((place: any) => ({
-        place_id: place.place_id,
-        name: place.name,
-        latitude: place.geometry.location.lat,
-        longitude: place.geometry.location.lng,
-        address: place.vicinity,
-        rating: place.rating,
-        userRatingsTotal: place.user_ratings_total,
-        isOpen: place.opening_hours?.open_now,
-      }));
+      // Filter courts within a reasonable distance (optional)
+      const nearbyCourtsList = courtsList.filter(court => {
+        if (court.latitude === 0 && court.longitude === 0) return false;
+        const distance = calculateDistanceKm(lat, lng, court.latitude, court.longitude);
+        return distance <= 200; // Only show courts within 3km
+      });
 
-      setCourts(results);
+      setCourts(nearbyCourtsList);
+      console.log(`Loaded ${nearbyCourtsList.length} nearby courts from Firebase`);
     } catch (err) {
-      if (axios.isAxiosError(err)) {
-    console.error('Axios error:', err.message);
-    if (err.response) {
-      console.error('Status:', err.response.status);
-      console.error('Headers:', err.response.headers);
-      console.error('Body:', err.response.data);
-    }
-  } else {
-    console.error('Unknown error:', err);
-  }
+      console.error('Error fetching courts from Firebase:', err);
+      Alert.alert('Error', 'Failed to load basketball courts from database.');
     }
   };
 
@@ -299,6 +312,11 @@ export default function MapScreen(): React.JSX.Element {
                 {item.isOpen ? '🟢 Open now' : '🔴 Closed'}
               </Text>
             )}
+            {item.peopleNumber !== undefined && (
+              <Text style={styles.peopleCount}>
+                👥 {item.peopleNumber} people currently
+              </Text>
+            )}
             {userLocation && (
               <Text style={styles.distance}>
                 📍 {calculateDistanceKm(userLocation.latitude, userLocation.longitude, item.latitude, item.longitude).toFixed(2)} km away
@@ -393,6 +411,12 @@ const styles = StyleSheet.create({
   },
   openStatus: {
     fontSize: 14,
+    marginTop: 2,
+  },
+  peopleCount: {
+    fontSize: 14,
+    color: '#FF6B6B',
+    fontWeight: '500',
     marginTop: 2,
   },
   distance: {

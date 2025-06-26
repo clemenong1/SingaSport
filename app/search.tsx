@@ -13,9 +13,9 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import axios from 'axios';
 import * as Location from 'expo-location';
-import { GOOGLE_PLACES_API_KEY } from '@env';
+import { collection, getDocs } from 'firebase/firestore';
+import { db } from '../src/services/FirebaseConfig';
 
 interface Court {
   place_id: string;
@@ -26,6 +26,8 @@ interface Court {
   rating?: number;
   userRatingsTotal?: number;
   isOpen?: boolean;
+  peopleNumber?: number;
+  geohash?: string;
 }
 
 export default function SearchScreen() {
@@ -40,11 +42,9 @@ export default function SearchScreen() {
   }, []);
 
   useEffect(() => {
-    if (userLocation) {
-      fetchNearbyCourts(userLocation.latitude, userLocation.longitude);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userLocation]);
+    // Fetch all courts from Firebase when component mounts
+    fetchCourtsFromFirebase();
+  }, []);
 
   const getCurrentLocation = async () => {
     try {
@@ -56,7 +56,7 @@ export default function SearchScreen() {
           longitude: location.coords.longitude,
         });
       } else {
-        setError('Location permission denied. Please enable location to search for courts.');
+        setError('Location permission denied. Please enable location to see distances.');
       }
     } catch (error) {
       setError('Error getting location.');
@@ -64,37 +64,50 @@ export default function SearchScreen() {
     }
   };
 
-  const fetchNearbyCourts = async (lat: number, lng: number) => {
+  const fetchCourtsFromFirebase = async () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await axios.get(
-        'https://maps.googleapis.com/maps/api/place/nearbysearch/json',
-        {
-          params: {
-            location: `${lat},${lng}`,
-            radius: 5000, // 10km radius
-            keyword: 'basketball court',
-            key: GOOGLE_PLACES_API_KEY,
-          },
+      console.log('Fetching courts from Firebase...');
+      const courtsCollection = collection(db, 'basketballCourts');
+      const courtSnapshot = await getDocs(courtsCollection);
+      
+      const courtsList = courtSnapshot.docs.map(doc => {
+        const data = doc.data();
+        console.log('Court data:', data);
+        
+        // Handle different possible location formats
+        let latitude = 0;
+        let longitude = 0;
+        
+        if (data.location) {
+          if (data.location.latitude && data.location.longitude) {
+            latitude = data.location.latitude;
+            longitude = data.location.longitude;
+          } else if (data.location._lat && data.location._long) {
+            latitude = data.location._lat;
+            longitude = data.location._long;
+          }
         }
-      );
+        
+        return {
+          place_id: doc.id,
+          name: data.name || 'Unknown Court',
+          latitude: latitude,
+          longitude: longitude,
+          address: data.address || 'Address not available',
+          rating: data.rating,
+          userRatingsTotal: data.userRatingsTotal,
+          isOpen: data.isOpen,
+          peopleNumber: data.peopleNumber || 0,
+          geohash: data.geohash,
+        };
+      });
 
-      const results = res.data.results.map((place: any) => ({
-        place_id: place.place_id,
-        name: place.name,
-        latitude: place.geometry.location.lat,
-        longitude: place.geometry.location.lng,
-        address: place.vicinity,
-        rating: place.rating,
-        userRatingsTotal: place.user_ratings_total,
-        isOpen: place.opening_hours?.open_now,
-      }));
-
-      setCourts(results);
+      setCourts(courtsList);
     } catch (err) {
-      setError('Error fetching courts.');
-      console.error('Error fetching courts:', err);
+      setError('Error fetching courts from database.');
+      console.error('Error fetching courts from Firebase:', err);
     } finally {
       setLoading(false);
     }
@@ -128,12 +141,8 @@ export default function SearchScreen() {
       return distA - distB;
     });
 
-  const handleSearch = () => {
-    if (userLocation) {
-      fetchNearbyCourts(userLocation.latitude, userLocation.longitude);
-    } else {
-      setError('Location not available.');
-    }
+  const handleRefresh = () => {
+    fetchCourtsFromFirebase();
   };
 
   const handleMapButton = () => {
@@ -148,6 +157,9 @@ export default function SearchScreen() {
           <Text style={styles.mapButtonText}>Map</Text>
         </TouchableOpacity>
         <Text style={styles.title}>Search Courts</Text>
+        <TouchableOpacity onPress={handleRefresh} style={styles.refreshButton}>
+          <Ionicons name="refresh" size={24} color="#007BFF" />
+        </TouchableOpacity>
       </View>
 
       <View style={styles.searchContainer}>
@@ -170,7 +182,7 @@ export default function SearchScreen() {
       {loading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#007BFF" />
-          <Text style={styles.loadingText}>Searching for courts...</Text>
+          <Text style={styles.loadingText}>Loading courts from database...</Text>
         </View>
       ) : (
         <FlatList
@@ -192,6 +204,11 @@ export default function SearchScreen() {
                   {item.isOpen ? '🟢 Open now' : '🔴 Closed'}
                 </Text>
               )}
+              {item.peopleNumber !== undefined && (
+                <Text style={styles.peopleCount}>
+                  👥 {item.peopleNumber} people currently
+                </Text>
+              )}
               {userLocation && (
                 <Text style={styles.distance}>
                   📍 {calculateDistanceKm(userLocation.latitude, userLocation.longitude, item.latitude, item.longitude).toFixed(2)} km away
@@ -202,7 +219,7 @@ export default function SearchScreen() {
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
               <Text style={styles.emptyText}>
-                {search ? 'No courts found matching your search' : 'Search for basketball courts'}
+                {search ? 'No courts found matching your search' : 'No courts available in database'}
               </Text>
             </View>
           }
@@ -240,6 +257,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   title: {
+    flex: 1,
     fontSize: 20,
     fontWeight: 'bold',
     color: '#333',
@@ -331,5 +349,16 @@ const styles = StyleSheet.create({
     color: '#d32f2f',
     fontWeight: 'bold',
     textAlign: 'center',
+  },
+  refreshButton: {
+    backgroundColor: '#f0f8ff',
+    padding: 8,
+    borderRadius: 20,
+  },
+  peopleCount: {
+    fontSize: 14,
+    color: '#FF6B6B',
+    fontWeight: '500',
+    marginBottom: 2,
   },
 });
