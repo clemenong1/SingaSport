@@ -16,6 +16,7 @@ import { router } from 'expo-router';
 import * as Location from 'expo-location';
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from '../src/services/FirebaseConfig';
+import { isCourtCurrentlyOpen } from '../src/utils';
 
 interface Court {
   place_id: string;
@@ -25,9 +26,10 @@ interface Court {
   address?: string;
   rating?: number;
   userRatingsTotal?: number;
-  isOpen?: boolean;
+  isOpen?: boolean | null;
   peopleNumber?: number;
   geohash?: string;
+  openingHours?: string[] | null;
 }
 
 export default function SearchScreen() {
@@ -90,6 +92,9 @@ export default function SearchScreen() {
           }
         }
         
+        // Determine if the court is currently open based on opening hours
+        const currentlyOpen = isCourtCurrentlyOpen(data.openingHours);
+        
         return {
           place_id: doc.id,
           name: data.name || 'Unknown Court',
@@ -98,9 +103,10 @@ export default function SearchScreen() {
           address: data.address || 'Address not available',
           rating: data.rating,
           userRatingsTotal: data.userRatingsTotal,
-          isOpen: data.isOpen,
+          isOpen: currentlyOpen,
           peopleNumber: data.peopleNumber || 0,
           geohash: data.geohash,
+          openingHours: data.openingHours,
         };
       });
 
@@ -149,6 +155,15 @@ export default function SearchScreen() {
     router.back(); // Navigate back to the map screen
   };
 
+  const navigateToCourtInfo = (court: Court) => {
+    router.push({
+      pathname: '/courtInfo' as any,
+      params: {
+        courtData: JSON.stringify(court)
+      }
+    });
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
@@ -191,7 +206,11 @@ export default function SearchScreen() {
           style={styles.list}
           onScrollBeginDrag={Keyboard.dismiss}
           renderItem={({ item }) => (
-            <View style={styles.card}>
+            <TouchableOpacity 
+              style={styles.card}
+              onPress={() => navigateToCourtInfo(item)}
+              activeOpacity={0.7}
+            >
               <Text style={styles.name}>{item.name}</Text>
               {item.address && <Text style={styles.address}>{item.address}</Text>}
               {item.rating && (
@@ -199,9 +218,14 @@ export default function SearchScreen() {
                   ⭐ {item.rating} ({item.userRatingsTotal ?? 0} reviews)
                 </Text>
               )}
-              {item.isOpen !== undefined && (
+              {item.isOpen !== undefined && item.isOpen !== null && (
                 <Text style={styles.openStatus}>
                   {item.isOpen ? '🟢 Open now' : '🔴 Closed'}
+                </Text>
+              )}
+              {item.isOpen === null && (
+                <Text style={styles.openStatusUnknown}>
+                  ⏰ Hours not available
                 </Text>
               )}
               {item.peopleNumber !== undefined && (
@@ -214,7 +238,7 @@ export default function SearchScreen() {
                   📍 {calculateDistanceKm(userLocation.latitude, userLocation.longitude, item.latitude, item.longitude).toFixed(2)} km away
                 </Text>
               )}
-            </View>
+            </TouchableOpacity>
           )}
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
@@ -321,6 +345,11 @@ const styles = StyleSheet.create({
   },
   openStatus: {
     fontSize: 14,
+    marginBottom: 2,
+  },
+  openStatusUnknown: {
+    fontSize: 14,
+    color: '#888',
     marginBottom: 2,
   },
   distance: {
