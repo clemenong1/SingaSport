@@ -7,8 +7,8 @@ import { geohashForLocation } from 'geofire-common';
 import { targets } from '../lib/target';
 // LOAD ENV VARIABLES (for Node.js script)
 require('dotenv').config();
-const API_KEY = process.env.GOOGLE_PLACES_API_KEY;
-if (!API_KEY) throw new Error('Missing GOOGLE_PLACES_API_KEY in .env');
+const API_KEY = process.env.EXPO_PUBLIC_GOOGLE_PLACES_API_KEY;
+if (!API_KEY) throw new Error('Missing EXPO_PUBLIC_GOOGLE_PLACES_API_KEY in .env');
 
 
 // INITIALIZE FIREBASE
