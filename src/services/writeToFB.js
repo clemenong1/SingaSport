@@ -4,20 +4,15 @@ import admin from 'firebase-admin';
 import { cert } from 'firebase-admin/app';
 import { getFirestore, GeoPoint } from 'firebase-admin/firestore';
 import { geohashForLocation } from 'geofire-common';
+import { targets } from '../lib/target';
 // LOAD ENV VARIABLES (for Node.js script)
 require('dotenv').config();
 const API_KEY = process.env.GOOGLE_PLACES_API_KEY;
 if (!API_KEY) throw new Error('Missing GOOGLE_PLACES_API_KEY in .env');
 
-// TARGET LOCATIONS (sample coordinates)
-const targets = [
-  { lat: 1.3521, lng: 103.8198 }, // Singapore downtown
-  { lat: 1.4, lng: 103.8 }, // North Singapore
-  // Add more target locations as needed
-];
 
 // INITIALIZE FIREBASE
-const serviceAccount = require('./singasport-cd006-firebase-adminsdk-fbsvc-ac174f92e1.json'); // Make sure this file exists
+const serviceAccount = require('../../singasport-cd006-firebase-adminsdk-fbsvc-ac174f92e1.json'); // Firebase service account key
 
 admin.initializeApp({
   credential: cert(serviceAccount),

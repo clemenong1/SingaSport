@@ -83,7 +83,7 @@ export default function ProfileScreen() {
             try {
               await signOut(auth);
               console.log('Signed out successfully');
-              router.replace('/login');
+              router.replace('/');
             } catch (error: any) {
               Alert.alert('Error', 'Failed to sign out: ' + error.message);
             }
