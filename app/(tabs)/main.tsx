@@ -212,7 +212,7 @@ export default function MapScreen(): React.JSX.Element {
   // Function to navigate to court info page
   const navigateToCourtInfo = (court: Court) => {
     router.push({
-      pathname: '/courtInfo' as any,
+      pathname: '/courts/court-info' as any,
       params: {
         courtData: JSON.stringify(court)
       }
@@ -239,7 +239,7 @@ export default function MapScreen(): React.JSX.Element {
     <View style={styles.container}>
       <TouchableOpacity 
         style={styles.search}
-        onPress={() => router.push('/search')}
+        onPress={() => router.push('/courts/search')}
         activeOpacity={0.7}
       >
         <View style={styles.searchContent}>

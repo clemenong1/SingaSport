@@ -1,9 +1,9 @@
 import { StyleSheet, TouchableOpacity, View, Text, ScrollView, Image, Alert } from 'react-native';
-import { auth } from '@/services/FirebaseConfig';
+import { auth } from '../../src/services/FirebaseConfig';
 import { signOut } from 'firebase/auth';
 import { router, useFocusEffect } from 'expo-router';
 import React, { useState, useCallback } from 'react';
-import { userService, UserProfile } from '@/utils/userService';
+import { userService, UserProfile } from '../../src/utils/userService';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 
@@ -67,7 +67,7 @@ export default function ProfileScreen() {
   };
 
   const handleEditProfile = () => {
-    router.push('/editProfile');
+    router.push('/profile/edit-profile');
   };
 
   const handleSignOut = async () => {
@@ -83,7 +83,7 @@ export default function ProfileScreen() {
             try {
               await signOut(auth);
               console.log('Signed out successfully');
-              router.replace('/');
+              router.replace('/auth/login');
             } catch (error: any) {
               Alert.alert('Error', 'Failed to sign out: ' + error.message);
             }

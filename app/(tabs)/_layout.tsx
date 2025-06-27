@@ -3,8 +3,8 @@ import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { Link, Tabs } from 'expo-router';
 import { Pressable } from 'react-native';
 
-import Colors from '@/constants/Colors';
-import { useColorScheme } from '@/components/useColorScheme';
+import Colors from '../../src/constants/Colors';
+import { useColorScheme } from '../../src/components/useColorScheme';
 
 // icons on the web at https://icons.expo.fyi/
 function TabBarIcon(props: {
