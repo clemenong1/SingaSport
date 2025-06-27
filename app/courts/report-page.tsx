@@ -15,7 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
-import { auth, db } from '../src/services/FirebaseConfig';
+import { auth, db } from '../../src/services/FirebaseConfig';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 
 interface Court {

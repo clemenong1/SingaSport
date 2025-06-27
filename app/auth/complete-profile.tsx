@@ -1,6 +1,3 @@
-import { auth } from '@/services/FirebaseConfig';
-import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
-import { userService } from '@/utils/userService';
 import React, { useState } from 'react';
 import {
   SafeAreaView,
@@ -8,18 +5,17 @@ import {
   TextInput,
   TouchableOpacity,
   StyleSheet,
-  View,
   ScrollView,
-  Alert
+  Alert,
+  View
 } from 'react-native';
 import { router } from 'expo-router';
+import { auth } from '../../src/services/FirebaseConfig';
+import { userService } from '../../src/utils/userService';
 
-export default function SignUpScreen() {
+export default function CompleteProfileScreen() {
   const [formData, setFormData] = useState({
     username: '',
-    email: '',
-    password: '',
-    confirmPassword: '',
     country: '',
     phoneNumber: ''
   });
@@ -37,22 +33,6 @@ export default function SignUpScreen() {
       Alert.alert('Error', 'Username is required');
       return false;
     }
-    if (!formData.email.trim()) {
-      Alert.alert('Error', 'Email is required');
-      return false;
-    }
-    if (!formData.password) {
-      Alert.alert('Error', 'Password is required');
-      return false;
-    }
-    if (formData.password.length < 6) {
-      Alert.alert('Error', 'Password must be at least 6 characters');
-      return false;
-    }
-    if (formData.password !== formData.confirmPassword) {
-      Alert.alert('Error', 'Passwords do not match');
-      return false;
-    }
     if (!formData.country.trim()) {
       Alert.alert('Error', 'Country is required');
       return false;
@@ -60,46 +40,59 @@ export default function SignUpScreen() {
     return true;
   };
 
-  const signUp = async () => {
+  const completeProfile = async () => {
     if (!validateForm()) return;
+
+    const user = auth.currentUser;
+    if (!user) {
+      Alert.alert('Error', 'No user found. Please sign in again.');
+      router.replace('/');
+      return;
+    }
 
     setLoading(true);
     try {
-      // Create Firebase Auth user
-      const userCredential = await createUserWithEmailAndPassword(auth, formData.email, formData.password);
-      const user = userCredential.user;
-
-      // Update the user's display name
-      await updateProfile(user, {
-        displayName: formData.username
-      });
-
-      // Create user profile in Firestore using the service
+      // Create user profile in Firestore
       await userService.createUserProfile(user.uid, {
         username: formData.username,
-        email: formData.email,
+        email: user.email || '',
         country: formData.country,
-        phoneNumber: formData.phoneNumber || undefined
+        phoneNumber: formData.phoneNumber || undefined,
+        profileImageUrl: user.photoURL || undefined
       });
 
-      console.log('Account created successfully');
-      Alert.alert('Success', 'Account created successfully!', [
-        { text: 'OK', onPress: () => router.replace('/(tabs)/main') }
+      console.log('Profile completed successfully');
+      Alert.alert('Success', 'Profile completed successfully!', [
+        { text: 'OK', onPress: () => router.replace('/(tabs)') }
       ]);
       
     } catch (error: any) {
-      console.error('Signup error:', error);
-      Alert.alert('Sign Up Failed', error.message);
+      console.error('Profile completion error:', error);
+      Alert.alert('Error', 'Failed to complete profile. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
+  const displayEmail = auth.currentUser?.email || 'Not available';
+
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContainer}>
-        <Text style={styles.title}>Create Your Account</Text>
-        <Text style={styles.subtitle}>Join SingaSport today!</Text>
+        <Text style={styles.title}>Complete Your Profile</Text>
+        <Text style={styles.subtitle}>
+          Please provide additional information to complete your profile
+        </Text>
+
+        {/* Display account info */}
+        <View style={styles.infoContainer}>
+          <Text style={styles.infoText}>
+            ✅ Email: {displayEmail}
+          </Text>
+          <Text style={styles.infoSubtext}>
+            (Already verified)
+          </Text>
+        </View>
 
         <TextInput
           style={styles.input}
@@ -108,34 +101,6 @@ export default function SignUpScreen() {
           value={formData.username}
           onChangeText={(value) => updateFormData('username', value)}
           autoCapitalize="none"
-        />
-
-        <TextInput
-          style={styles.input}
-          placeholder="Email"
-          placeholderTextColor="#888"
-          value={formData.email}
-          onChangeText={(value) => updateFormData('email', value)}
-          autoCapitalize="none"
-          keyboardType="email-address"
-        />
-
-        <TextInput
-          style={styles.input}
-          placeholder="Password"
-          placeholderTextColor="#888"
-          value={formData.password}
-          onChangeText={(value) => updateFormData('password', value)}
-          secureTextEntry
-        />
-
-        <TextInput
-          style={styles.input}
-          placeholder="Confirm Password"
-          placeholderTextColor="#888"
-          value={formData.confirmPassword}
-          onChangeText={(value) => updateFormData('confirmPassword', value)}
-          secureTextEntry
         />
 
         <TextInput
@@ -158,19 +123,12 @@ export default function SignUpScreen() {
 
         <TouchableOpacity 
           style={[styles.button, loading && styles.buttonDisabled]} 
-          onPress={signUp}
+          onPress={completeProfile}
           disabled={loading}
         >
           <Text style={styles.buttonText}>
-            {loading ? 'Creating Account...' : 'Create Account'}
+            {loading ? 'Completing Profile...' : 'Complete Profile'}
           </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity 
-          style={styles.linkButton} 
-          onPress={() => router.push('/')}
-        >
-          <Text style={styles.linkText}>Already have an account? Log In</Text>
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
@@ -186,7 +144,7 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     justifyContent: 'center',
     paddingHorizontal: 30,
-    paddingVertical: 40,
+    paddingVertical: 20,
   },
   title: {
     fontSize: 26,
@@ -200,6 +158,26 @@ const styles = StyleSheet.create({
     marginBottom: 30,
     alignSelf: 'center',
     color: '#666',
+    textAlign: 'center',
+    lineHeight: 22,
+  },
+  infoContainer: {
+    backgroundColor: '#e8f5e8',
+    padding: 15,
+    borderRadius: 10,
+    marginBottom: 25,
+    borderLeftWidth: 4,
+    borderLeftColor: '#4CAF50',
+  },
+  infoText: {
+    fontSize: 16,
+    color: '#2E7D32',
+    fontWeight: '500',
+  },
+  infoSubtext: {
+    fontSize: 14,
+    color: '#388E3C',
+    marginTop: 2,
   },
   input: {
     height: 50,
@@ -215,7 +193,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#0066cc',
     paddingVertical: 15,
     borderRadius: 10,
-    marginBottom: 15,
+    marginTop: 10,
   },
   buttonDisabled: {
     backgroundColor: '#ccc',
@@ -225,14 +203,5 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     fontSize: 16,
     textAlign: 'center',
-  },
-  linkButton: {
-    paddingVertical: 10,
-  },
-  linkText: {
-    color: '#0066cc',
-    fontSize: 16,
-    textAlign: 'center',
-    textDecorationLine: 'underline',
   },
 }); 
