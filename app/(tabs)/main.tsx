@@ -17,17 +17,11 @@ import * as Location from 'expo-location';
 import * as geolib from 'geolib';
 import * as Notifications from 'expo-notifications';
 import { router } from 'expo-router';
-import { collection, getDocs } from 'firebase/firestore';
+import { collection, getDocs, query, where, orderBy, limit } from 'firebase/firestore';
 import { db } from '../../src/services/FirebaseConfig';
 import { isCourtCurrentlyOpen } from '../../src/utils';
+import geohash from 'ngeohash';
 
-
-// Add your geofence data
-const basketballCourts = [
-  { id: 'VP Sheltered Basketball Court', latitude: 1.4296513, longitude: 103.7974786, radius: 100 },
-  { id: 'court2', latitude: 1.305, longitude: 103.805, radius: 100 },
-  { id: 'clemen house', latitude: 1.4284690, longitude: 103.7926025, radius: 1000 },
-];
 
 const insideStates: Record<string, boolean> = {};
 
@@ -45,6 +39,13 @@ interface Court {
   openingHours?: string[] | null;
 }
 
+interface BasketballCourt {
+  id: string;
+  latitude: number;
+  longitude: number;
+  radius: number;
+}
+
 export default function MapScreen(): React.JSX.Element {
   const mapRef = useRef<MapView>(null);
   const [region, setRegion] = useState<Region | null>(null);
@@ -52,6 +53,7 @@ export default function MapScreen(): React.JSX.Element {
   const [search, setSearch] = useState<string>('');
   const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   const [selectedCourtId, setSelectedCourtId] = useState<string | null>(null);
+  const [nearbyCourts, setNearbyCourts] = useState<BasketballCourt[]>([]);
 
   const calculateDistanceKm = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
     const toRad = (value: number) => (value * Math.PI) / 180;
@@ -95,52 +97,100 @@ export default function MapScreen(): React.JSX.Element {
 
       fetchNearbyCourts(latitude, longitude);
 
-      // Start foreground location tracking
+      // Start foreground location tracking with dynamic geofencing
       const locationSubscription = Location.watchPositionAsync(
         {
           accuracy: Location.Accuracy.Balanced,
-          timeInterval: 5000, // Update every 5 seconds
-          distanceInterval: 10, // Update every 10 meters
+          timeInterval: 10000, // Update every 5 seconds
+          // distanceInterval: 10, // REMOVED - was preventing frequent updates
         },
-        (location) => {
+        async (location) => {
           const { latitude, longitude } = location.coords;
+          
+          // Add timestamp to track actual callback frequency
+          const timestamp = new Date().toLocaleTimeString();
+          console.log(`⏰ Location callback triggered at ${timestamp} - Lat: ${latitude}, Lng: ${longitude}`);
           
           // Update user location state
           setUserLocation({ latitude, longitude });
           
-          // Check geofences
-          for (const court of basketballCourts) {
-            const isInside = geolib.isPointWithinRadius(
-              { latitude, longitude },
-              { latitude: court.latitude, longitude: court.longitude },
-              court.radius
-            );
+          try {
+            // 🔥 DYNAMIC GEOFENCING: Fetch nearest courts every 5 seconds
+            console.log('🔄 Updating geofences based on current location...');
+            
+            const currentNearbyCourts = await getNearbyBasketballCourtsFromLocation(latitude, longitude);
+            
+            // Check geofences using freshly fetched nearby courts
+            for (const court of currentNearbyCourts) {
+              const isInside = geolib.isPointWithinRadius(
+                { latitude, longitude },
+                { latitude: court.latitude, longitude: court.longitude },
+                court.radius
+              );
 
-            if (isInside && !insideStates[court.id]) {
-              insideStates[court.id] = true;
-              console.log(`Entered geofence: ${court.id}`);
+              if (isInside && !insideStates[court.id]) {
+                insideStates[court.id] = true;
+                console.log(`🏀 Entered geofence: ${court.id}`);
 
-              // Show notification
-              Notifications.scheduleNotificationAsync({
-                content: {
-                  title: `Entered ${court.id}`,
-                  body: `You are inside the geofence for ${court.id}`,
-                },
-                trigger: null,
-              });
+                // Show notification
+                Notifications.scheduleNotificationAsync({
+                  content: {
+                    title: `Entered ${court.id}`,
+                    body: `You are now near ${court.id}! 🏀`,
+                  },
+                  trigger: null,
+                });
 
-            } else if (!isInside && insideStates[court.id]) {
-              insideStates[court.id] = false;
-              console.log(`Exited geofence: ${court.id}`);
+              } else if (!isInside && insideStates[court.id]) {
+                insideStates[court.id] = false;
+                console.log(`👋 Exited geofence: ${court.id}`);
 
-              // Show notification
-              Notifications.scheduleNotificationAsync({
-                content: {
-                  title: `Exited ${court.id}`,
-                  body: `You left the geofence for ${court.id}`,
-                },
-                trigger: null,
-              });
+                // Show notification
+                Notifications.scheduleNotificationAsync({
+                  content: {
+                    title: `Left ${court.id}`,
+                    body: `You left the area of ${court.id}`,
+                  },
+                  trigger: null,
+                });
+              }
+            }
+          } catch (error) {
+            console.error('Error in dynamic geofencing:', error);
+            
+            // Fallback to static geofencing if dynamic fails
+            console.log('⚠️ Falling back to static geofencing');
+            for (const court of nearbyCourts) {
+              const isInside = geolib.isPointWithinRadius(
+                { latitude, longitude },
+                { latitude: court.latitude, longitude: court.longitude },
+                court.radius
+              );
+
+              if (isInside && !insideStates[court.id]) {
+                insideStates[court.id] = true;
+                console.log(`Entered geofence (fallback): ${court.id}`);
+
+                Notifications.scheduleNotificationAsync({
+                  content: {
+                    title: `Entered ${court.id}`,
+                    body: `You are inside the geofence for ${court.id}`,
+                  },
+                  trigger: null,
+                });
+
+              } else if (!isInside && insideStates[court.id]) {
+                insideStates[court.id] = false;
+                console.log(`Exited geofence (fallback): ${court.id}`);
+
+                Notifications.scheduleNotificationAsync({
+                  content: {
+                    title: `Exited ${court.id}`,
+                    body: `You left the geofence for ${court.id}`,
+                  },
+                  trigger: null,
+                });
+              }
             }
           }
         }
@@ -206,6 +256,161 @@ export default function MapScreen(): React.JSX.Element {
     } catch (err) {
       console.error('Error fetching courts from Firebase:', err);
       Alert.alert('Error', 'Failed to load basketball courts from database.');
+    }
+  };
+
+  /**
+   * Optimized version that accepts coordinates (no permission requests)
+   * Used for dynamic geofencing every 5 seconds
+   */
+  const getNearbyBasketballCourtsFromLocation = async (lat: number, lng: number): Promise<BasketballCourt[]> => {
+    try {
+      console.log(`🔄 Fetching courts for dynamic geofencing: ${lat}, ${lng}`);
+      
+      // Convert location to 6-character geohash
+      const fullGeohash = geohash.encode(lat, lng, 10);
+      const userGeohash = fullGeohash.substring(0, 6);
+      console.log(`User geohash (6 chars): ${userGeohash}`);
+
+      // Query Firestore for courts with matching geohash prefix
+      const courtsRef = collection(db, 'basketballCourts');
+      
+      const startRange = userGeohash;
+      const endRange = userGeohash + '\uf8ff';
+      
+      const geohashQuery = query(
+        courtsRef,
+        where('geohash', '>=', startRange),
+        where('geohash', '<', endRange),
+        orderBy('geohash'),
+        limit(20) // Reduced for faster frequent queries
+      );
+
+      const snapshot = await getDocs(geohashQuery);
+      const basketballCourts: BasketballCourt[] = [];
+      
+      snapshot.forEach((doc) => {
+        const data = doc.data() as any;
+        
+        let courtLatitude = 0;
+        let courtLongitude = 0;
+        
+        if (data.location) {
+          if (data.location.latitude && data.location.longitude) {
+            courtLatitude = data.location.latitude;
+            courtLongitude = data.location.longitude;
+          } else if (data.location._lat && data.location._long) {
+            courtLatitude = data.location._lat;
+            courtLongitude = data.location._long;
+          }
+        } else if (data.latitude && data.longitude) {
+          courtLatitude = data.latitude;
+          courtLongitude = data.longitude;
+        }
+        
+        if (courtLatitude !== 0 && courtLongitude !== 0) {
+          const court: BasketballCourt = {
+            id: data.name || doc.id,
+            latitude: courtLatitude,
+            longitude: courtLongitude,
+            radius: data.radius || 100,
+          };
+          basketballCourts.push(court);
+        }
+      });
+
+      // Fallback if no courts found
+      if (basketballCourts.length === 0) {
+        console.log('No courts in geohash, using radius fallback...');
+        return await getFallbackCourts(lat, lng, 2); // Small radius for frequent queries
+      }
+
+      // Sort by distance
+      basketballCourts.sort((a, b) => {
+        const distA = calculateDistanceKm(lat, lng, a.latitude, a.longitude);
+        const distB = calculateDistanceKm(lat, lng, b.latitude, b.longitude);
+        return distA - distB;
+      });
+
+      // Update state
+      setNearbyCourts(basketballCourts);
+      
+      console.log(`✅ Dynamic geofencing: Found ${basketballCourts.length} nearby courts`);
+      return basketballCourts;
+      
+    } catch (error) {
+      console.error('Error in dynamic court fetching:', error);
+      return nearbyCourts; // Return existing state as fallback
+    }
+  };
+
+  /**
+   * Fallback function to query courts by radius when geohash returns no results
+   */
+  const getFallbackCourts = async (userLat: number, userLng: number, radiusKm: number = 5): Promise<BasketballCourt[]> => {
+    try {
+      console.log(`Fallback: Querying courts within ${radiusKm}km radius`);
+      
+      const courtsRef = collection(db, 'basketballCourts');
+      const allCourtsQuery = query(courtsRef, limit(100)); // Get more courts for radius filtering
+      
+      const snapshot = await getDocs(allCourtsQuery);
+      const nearbyCourtsArray: BasketballCourt[] = [];
+      
+      snapshot.forEach((doc) => {
+        const data = doc.data() as any; // Type assertion for Firestore data
+        
+        // Handle different location formats
+        let courtLatitude = 0;
+        let courtLongitude = 0;
+        
+        if (data.location) {
+          if (data.location.latitude && data.location.longitude) {
+            courtLatitude = data.location.latitude;
+            courtLongitude = data.location.longitude;
+          } else if (data.location._lat && data.location._long) {
+            courtLatitude = data.location._lat;
+            courtLongitude = data.location._long;
+          }
+        } else if (data.latitude && data.longitude) {
+          courtLatitude = data.latitude;
+          courtLongitude = data.longitude;
+        }
+        
+        // Calculate distance and filter by radius
+        if (courtLatitude !== 0 && courtLongitude !== 0) {
+          const distance = calculateDistanceKm(userLat, userLng, courtLatitude, courtLongitude);
+          
+          if (distance <= radiusKm) {
+            const court: BasketballCourt = {
+              id: data.name || doc.id,
+              latitude: courtLatitude,
+              longitude: courtLongitude,
+              radius: data.radius || 100,
+            };
+            
+            nearbyCourtsArray.push(court);
+          }
+        }
+      });
+      
+      // Sort by distance
+      nearbyCourtsArray.sort((a, b) => {
+        const distA = calculateDistanceKm(userLat, userLng, a.latitude, a.longitude);
+        const distB = calculateDistanceKm(userLat, userLng, b.latitude, b.longitude);
+        return distA - distB;
+      });
+      
+      console.log(`Found ${nearbyCourtsArray.length} courts within radius fallback`);
+      
+      // Update the nearby courts state
+      setNearbyCourts(nearbyCourtsArray);
+      
+      return nearbyCourtsArray;
+      
+    } catch (error) {
+      console.error('Error in radius fallback query:', error);
+      return [];
     }
   };
 
