@@ -15,8 +15,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import * as Location from 'expo-location';
 import { collection, getDocs } from 'firebase/firestore';
-import { db } from '../src/services/FirebaseConfig';
-import { isCourtCurrentlyOpen } from '../src/utils';
+import { db } from '../../src/services/FirebaseConfig';
+import { isCourtCurrentlyOpen } from '../../src/utils';
 
 interface Court {
   place_id: string;
@@ -157,7 +157,7 @@ export default function SearchScreen() {
 
   const navigateToCourtInfo = (court: Court) => {
     router.push({
-      pathname: '/courtInfo' as any,
+      pathname: '/courts/court-info' as any,
       params: {
         courtData: JSON.stringify(court)
       }

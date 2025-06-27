@@ -18,8 +18,8 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import * as Location from 'expo-location';
-import { isCourtCurrentlyOpen } from '../src/utils';
-import { db } from '../src/services/FirebaseConfig';
+import { isCourtCurrentlyOpen } from '../../src/utils';
+import { db } from '../../src/services/FirebaseConfig';
 import { collection, query, orderBy, onSnapshot, Timestamp } from 'firebase/firestore';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
@@ -195,7 +195,7 @@ export default function CourtInfoScreen() {
     if (!court) return;
     
     router.push({
-      pathname: '/reportPage' as any,
+      pathname: '/courts/report-page' as any,
       params: {
         courtData: JSON.stringify(court)
       }
