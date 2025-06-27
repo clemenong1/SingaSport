@@ -55,6 +55,7 @@ export default function MapScreen(): React.JSX.Element {
   const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   const [selectedCourtId, setSelectedCourtId] = useState<string | null>(null);
   const [nearbyCourts, setNearbyCourts] = useState<BasketballCourt[]>([]);
+  const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
 
   const calculateDistanceKm = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
     const toRad = (value: number) => (value * Math.PI) / 180;
@@ -373,9 +374,38 @@ export default function MapScreen(): React.JSX.Element {
     })();
   }, []);
 
+  // 🔥 ACTIVE DATA REFRESH: Update court data every 10 seconds for real-time UI updates
+  useEffect(() => {
+    const refreshCourtData = async () => {
+      if (userLocation) {
+        const timestamp = new Date().toLocaleTimeString();
+        console.log(`🔄 Refreshing court data at ${timestamp} for real-time UI updates...`);
+        
+        setIsRefreshing(true);
+        try {
+          await fetchNearbyCourts(userLocation.latitude, userLocation.longitude);
+          console.log(`✅ Court data refreshed successfully at ${timestamp}`);
+        } catch (error) {
+          console.error('Error refreshing court data:', error);
+        } finally {
+          setIsRefreshing(false);
+        }
+      }
+    };
+
+    // Set up interval to refresh court data every 10 seconds
+    const refreshInterval = setInterval(refreshCourtData, 10000);
+
+    // Cleanup interval when component unmounts
+    return () => {
+      clearInterval(refreshInterval);
+      console.log('🛑 Court data refresh interval cleared');
+    };
+  }, [userLocation]); // Re-setup interval when user location changes
+
   const fetchNearbyCourts = async (lat: number, lng: number) => {
     try {
-      console.log('Fetching courts from Firebase...');
+      console.log('🔄 Fetching courts from Firebase for UI update...');
       const courtsCollection = collection(db, 'basketballCourts');
       const courtSnapshot = await getDocs(courtsCollection);
       
@@ -399,6 +429,9 @@ export default function MapScreen(): React.JSX.Element {
         // Determine if the court is currently open based on opening hours
         const currentlyOpen = isCourtCurrentlyOpen(data.openingHours);
         
+        // Get fresh people count from database
+        const peopleCount = data.peopleNumber || 0;
+        
         return {
           place_id: doc.id,
           name: data.name || 'Unknown Court',
@@ -408,7 +441,7 @@ export default function MapScreen(): React.JSX.Element {
           rating: data.rating,
           userRatingsTotal: data.userRatingsTotal,
           isOpen: currentlyOpen,
-          peopleNumber: data.peopleNumber || 0,
+          peopleNumber: peopleCount,
           geohash: data.geohash,
           openingHours: data.openingHours,
         };
@@ -418,11 +451,20 @@ export default function MapScreen(): React.JSX.Element {
       const nearbyCourtsList = courtsList.filter(court => {
         if (court.latitude === 0 && court.longitude === 0) return false;
         const distance = calculateDistanceKm(lat, lng, court.latitude, court.longitude);
-        return distance <= 200; // Only show courts within 3km
+        return distance <= 200; // Only show courts within 200km radius
+      });
+
+      // Log people count changes for debugging
+      nearbyCourtsList.slice(0, 5).forEach(court => {
+        console.log(`👥 ${court.name}: ${court.peopleNumber} people currently`);
       });
 
       setCourts(nearbyCourtsList);
-      console.log(`Loaded ${nearbyCourtsList.length} nearby courts from Firebase`);
+      console.log(`✅ UI Updated: ${nearbyCourtsList.length} courts loaded with fresh people counts`);
+      
+      // Log total people across all courts for monitoring
+      const totalPeople = nearbyCourtsList.reduce((sum, court) => sum + (court.peopleNumber || 0), 0);
+      console.log(`📊 Total people across all courts: ${totalPeople}`);
     } catch (err) {
       console.error('Error fetching courts from Firebase:', err);
       Alert.alert('Error', 'Failed to load basketball courts from database.');
@@ -622,6 +664,12 @@ export default function MapScreen(): React.JSX.Element {
         <View style={styles.searchContent}>
           <Ionicons name="search" size={20} color="#666" style={styles.searchIcon} />
           <Text style={styles.searchPlaceholder}>Search basketball courts</Text>
+          {isRefreshing && (
+            <View style={styles.refreshIndicator}>
+              <ActivityIndicator size="small" color="#007BFF" />
+              <Text style={styles.refreshText}>Updating...</Text>
+            </View>
+          )}
         </View>
       </TouchableOpacity>
       
@@ -688,9 +736,15 @@ export default function MapScreen(): React.JSX.Element {
               </Text>
             )}
             {item.peopleNumber !== undefined && (
-              <Text style={styles.peopleCount}>
-                👥 {item.peopleNumber} people currently
-              </Text>
+              <View style={styles.peopleCountContainer}>
+                <Text style={styles.peopleCount}>
+                  👥 {item.peopleNumber} people currently
+                </Text>
+                <View style={styles.liveIndicator}>
+                  <View style={styles.liveDot} />
+                  <Text style={styles.liveText}>LIVE</Text>
+                </View>
+              </View>
             )}
             {userLocation && (
               <Text style={styles.distance}>
@@ -738,6 +792,7 @@ const styles = StyleSheet.create({
   searchPlaceholder: {
     color: '#666',
     fontSize: 16,
+    flex: 1,
   },
   map: {
     width: Dimensions.get('window').width,
@@ -793,11 +848,32 @@ const styles = StyleSheet.create({
     color: '#888',
     marginTop: 2,
   },
+  peopleCountContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
   peopleCount: {
     fontSize: 14,
     color: '#FF6B6B',
     fontWeight: '500',
     marginTop: 2,
+  },
+  liveIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginLeft: 4,
+  },
+  liveDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#FF6B6B',
+    marginRight: 4,
+  },
+  liveText: {
+    fontSize: 12,
+    color: '#FF6B6B',
+    fontWeight: '500',
   },
   distance: {
     fontSize: 14,
@@ -823,6 +899,16 @@ const styles = StyleSheet.create({
   },
   navigationText: {
     fontSize: 14,
+    color: '#007BFF',
+    marginLeft: 4,
+  },
+  refreshIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginLeft: 8,
+  },
+  refreshText: {
+    fontSize: 12,
     color: '#007BFF',
     marginLeft: 4,
   },
