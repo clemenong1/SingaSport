@@ -17,7 +17,7 @@ import * as Location from 'expo-location';
 import * as geolib from 'geolib';
 import * as Notifications from 'expo-notifications';
 import { router } from 'expo-router';
-import { collection, getDocs, query, where, orderBy, limit } from 'firebase/firestore';
+import { collection, getDocs, query, where, orderBy, limit, doc, updateDoc, increment, getDoc } from 'firebase/firestore';
 import { db } from '../../src/services/FirebaseConfig';
 import { isCourtCurrentlyOpen } from '../../src/utils';
 import geohash from 'ngeohash';
@@ -44,6 +44,7 @@ interface BasketballCourt {
   latitude: number;
   longitude: number;
   radius: number;
+  docId?: string; // Optional Firestore document ID for efficient updates
 }
 
 export default function MapScreen(): React.JSX.Element {
@@ -69,6 +70,143 @@ export default function MapScreen(): React.JSX.Element {
   
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     return R * c;
+  };
+
+  /**
+   * Find the correct Firestore document ID for a court based on its name
+   * Since court.id comes from the name field, we need to find the actual doc ID
+   */
+  const findCourtDocumentId = async (courtName: string): Promise<string | null> => {
+    try {
+      const courtsRef = collection(db, 'basketballCourts');
+      const courtsQuery = query(courtsRef, where('name', '==', courtName), limit(1));
+      const snapshot = await getDocs(courtsQuery);
+      
+      if (!snapshot.empty) {
+        const docId = snapshot.docs[0].id;
+        console.log(`Found court document ID: ${docId} for court: ${courtName}`);
+        return docId;
+      } else {
+        console.error(`No document found for court: ${courtName}`);
+        return null;
+      }
+    } catch (error) {
+      console.error('Error finding court document ID:', error);
+      return null;
+    }
+  };
+
+  /**
+   * Decrement people count when user exits geofence (with minimum of 0)
+   */
+  const decrementPeopleCount = async (courtName: string): Promise<boolean> => {
+    try {
+      const courtDocId = await findCourtDocumentId(courtName);
+      if (!courtDocId) {
+        console.error(`Cannot decrement: Court document ID not found for ${courtName}`);
+        return false;
+      }
+
+      const courtRef = doc(db, 'basketballCourts', courtDocId);
+      
+      // Get current count to ensure we don't go below 0
+      const courtDoc = await getDoc(courtRef);
+      if (courtDoc.exists()) {
+        const currentCount = courtDoc.data().peopleNumber || 0;
+        
+        if (currentCount > 0) {
+          await updateDoc(courtRef, {
+            peopleNumber: increment(-1)
+          });
+          console.log(`✅ Decremented people count for ${courtName} (Doc ID: ${courtDocId})`);
+          return true;
+        } else {
+          console.log(`⚠️ People count already 0 for ${courtName}, not decrementing`);
+          return true; // Not an error, just already at minimum
+        }
+      } else {
+        console.error(`Court document not found: ${courtDocId}`);
+        return false;
+      }
+    } catch (error) {
+      console.error(`Error decrementing people count for ${courtName}:`, error);
+      return false;
+    }
+  };
+
+  /**
+   * Optimized increment using docId when available
+   */
+  const incrementPeopleCountOptimized = async (courtName: string, docId?: string): Promise<boolean> => {
+    try {
+      let courtDocId = docId;
+      
+      // Only search for docId if not provided
+      if (!courtDocId) {
+        const foundDocId = await findCourtDocumentId(courtName);
+        if (!foundDocId) {
+          console.error(`Cannot increment: Court document ID not found for ${courtName}`);
+          return false;
+        }
+        courtDocId = foundDocId;
+      }
+
+      const courtRef = doc(db, 'basketballCourts', courtDocId);
+      
+      await updateDoc(courtRef, {
+        peopleNumber: increment(1)
+      });
+      
+      console.log(`✅ Incremented people count for ${courtName} (Doc ID: ${courtDocId})`);
+      return true;
+    } catch (error) {
+      console.error(`Error incrementing people count for ${courtName}:`, error);
+      return false;
+    }
+  };
+
+  /**
+   * Optimized decrement using docId when available
+   */
+  const decrementPeopleCountOptimized = async (courtName: string, docId?: string): Promise<boolean> => {
+    try {
+      let courtDocId = docId;
+      
+      // Only search for docId if not provided
+      if (!courtDocId) {
+        const foundDocId = await findCourtDocumentId(courtName);
+        if (!foundDocId) {
+          console.error(`Cannot decrement: Court document ID not found for ${courtName}`);
+          return false;
+        }
+        courtDocId = foundDocId;
+      }
+
+      const courtRef = doc(db, 'basketballCourts', courtDocId);
+      
+      // Get current count to ensure we don't go below 0
+      const courtDoc = await getDoc(courtRef);
+      if (courtDoc.exists()) {
+        const currentCount = courtDoc.data().peopleNumber || 0;
+        
+        if (currentCount > 0) {
+          await updateDoc(courtRef, {
+            peopleNumber: increment(-1)
+          });
+          console.log(`✅ Decremented people count for ${courtName} (Doc ID: ${courtDocId})`);
+          return true;
+        } else {
+          console.log(`⚠️ People count already 0 for ${courtName}, not decrementing`);
+          return true; // Not an error, just already at minimum
+        }
+      } else {
+        console.error(`Court document not found: ${courtDocId}`);
+        return false;
+      }
+    } catch (error) {
+      console.error(`Error decrementing people count for ${courtName}:`, error);
+      return false;
+    }
   };
 
   useEffect(() => {
@@ -101,7 +239,7 @@ export default function MapScreen(): React.JSX.Element {
       const locationSubscription = Location.watchPositionAsync(
         {
           accuracy: Location.Accuracy.Balanced,
-          timeInterval: 10000, // Update every 5 seconds
+          timeInterval: 10000, // Update every 10 seconds for people count tracking
           // distanceInterval: 10, // REMOVED - was preventing frequent updates
         },
         async (location) => {
@@ -132,6 +270,14 @@ export default function MapScreen(): React.JSX.Element {
                 insideStates[court.id] = true;
                 console.log(`🏀 Entered geofence: ${court.id}`);
 
+                // 🔥 UPDATE DATABASE: Increment people count
+                const incrementSuccess = await incrementPeopleCountOptimized(court.id, court.docId);
+                if (incrementSuccess) {
+                  console.log(`📊 Database updated: +1 person at ${court.id}`);
+                } else {
+                  console.error(`❌ Failed to update database for ${court.id}`);
+                }
+
                 // Show notification
                 Notifications.scheduleNotificationAsync({
                   content: {
@@ -144,6 +290,14 @@ export default function MapScreen(): React.JSX.Element {
               } else if (!isInside && insideStates[court.id]) {
                 insideStates[court.id] = false;
                 console.log(`👋 Exited geofence: ${court.id}`);
+
+                // 🔥 UPDATE DATABASE: Decrement people count
+                const decrementSuccess = await decrementPeopleCountOptimized(court.id, court.docId);
+                if (decrementSuccess) {
+                  console.log(`📊 Database updated: -1 person at ${court.id}`);
+                } else {
+                  console.error(`❌ Failed to update database for ${court.id}`);
+                }
 
                 // Show notification
                 Notifications.scheduleNotificationAsync({
@@ -171,6 +325,14 @@ export default function MapScreen(): React.JSX.Element {
                 insideStates[court.id] = true;
                 console.log(`Entered geofence (fallback): ${court.id}`);
 
+                // 🔥 UPDATE DATABASE: Increment people count (fallback)
+                const incrementSuccess = await incrementPeopleCountOptimized(court.id);
+                if (incrementSuccess) {
+                  console.log(`📊 Database updated (fallback): +1 person at ${court.id}`);
+                } else {
+                  console.error(`❌ Failed to update database (fallback) for ${court.id}`);
+                }
+
                 Notifications.scheduleNotificationAsync({
                   content: {
                     title: `Entered ${court.id}`,
@@ -182,6 +344,14 @@ export default function MapScreen(): React.JSX.Element {
               } else if (!isInside && insideStates[court.id]) {
                 insideStates[court.id] = false;
                 console.log(`Exited geofence (fallback): ${court.id}`);
+
+                // 🔥 UPDATE DATABASE: Decrement people count (fallback)
+                const decrementSuccess = await decrementPeopleCountOptimized(court.id);
+                if (decrementSuccess) {
+                  console.log(`📊 Database updated (fallback): -1 person at ${court.id}`);
+                } else {
+                  console.error(`❌ Failed to update database (fallback) for ${court.id}`);
+                }
 
                 Notifications.scheduleNotificationAsync({
                   content: {
@@ -314,6 +484,7 @@ export default function MapScreen(): React.JSX.Element {
             latitude: courtLatitude,
             longitude: courtLongitude,
             radius: data.radius || 100,
+            docId: doc.id,
           };
           basketballCourts.push(court);
         }
@@ -387,6 +558,7 @@ export default function MapScreen(): React.JSX.Element {
               latitude: courtLatitude,
               longitude: courtLongitude,
               radius: data.radius || 100,
+              docId: doc.id,
             };
             
             nearbyCourtsArray.push(court);
