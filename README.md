@@ -106,7 +106,7 @@ adb emu geo fix 103.7974001 1.4292847
 #### 3. Simulate Arrival at the Court
 
 ```text
-1. On your emulator or phone, open the app.
+1. On your phone, open the app.
 2. In the search bar, type: VP Sheltered Basketball Court
 3. Tap the first result.
 4. Wait 30–60 seconds.
