@@ -21,9 +21,9 @@ import { collection, getDocs, query, where, orderBy, limit, doc, updateDoc, incr
 import { db } from '../../src/services/FirebaseConfig';
 import { isCourtCurrentlyOpen } from '../../src/utils';
 import geohash from 'ngeohash';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-
-const insideStates: Record<string, boolean> = {};
+// Remove module-level insideStates - now handled as component state
 
 interface Court {
   place_id: string;
@@ -56,6 +56,43 @@ export default function MapScreen(): React.JSX.Element {
   const [selectedCourtId, setSelectedCourtId] = useState<string | null>(null);
   const [nearbyCourts, setNearbyCourts] = useState<BasketballCourt[]>([]);
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
+  
+  // AsyncStorage state management for geofences
+  const [insideStates, setInsideStates] = useState<Record<string, boolean>>({});
+  const [statesLoaded, setStatesLoaded] = useState<boolean>(false);
+
+  // Load persisted geofence states on app start
+  const loadGeofenceStates = async () => {
+    try {
+      const savedStates = await AsyncStorage.getItem('geofenceStates');
+      if (savedStates) {
+        const parsedStates = JSON.parse(savedStates);
+        setInsideStates(parsedStates);
+        console.log('📱 Loaded persisted geofence states:', parsedStates);
+      } else {
+        console.log('📱 No saved geofence states found, starting fresh');
+      }
+    } catch (error) {
+      console.error('Error loading geofence states:', error);
+    } finally {
+      setStatesLoaded(true);
+    }
+  };
+
+  // Save geofence states to AsyncStorage
+  const saveGeofenceStates = async (newStates: Record<string, boolean>) => {
+    try {
+      await AsyncStorage.setItem('geofenceStates', JSON.stringify(newStates));
+      console.log('💾 Saved geofence states:', newStates);
+    } catch (error) {
+      console.error('Error saving geofence states:', error);
+    }
+  };
+
+  // Load states when component mounts
+  useEffect(() => {
+    loadGeofenceStates();
+  }, []);
 
   const calculateDistanceKm = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
     const toRad = (value: number) => (value * Math.PI) / 180;
@@ -211,6 +248,12 @@ export default function MapScreen(): React.JSX.Element {
   };
 
   useEffect(() => {
+    // Don't start location tracking until states are loaded
+    if (!statesLoaded) {
+      console.log('⏳ Waiting for geofence states to load before starting location tracking...');
+      return;
+    }
+
     (async () => {
       // Request notification permissions
       const { status: notificationStatus } = await Notifications.requestPermissionsAsync();
@@ -267,8 +310,15 @@ export default function MapScreen(): React.JSX.Element {
                 court.radius
               );
 
-              if (isInside && !insideStates[court.id]) {
-                insideStates[court.id] = true;
+              const wasInside = insideStates[court.id] || false;
+
+              // ONLY process if there's a state change
+              if (isInside && !wasInside) {
+                // Entering geofence
+                const newStates = { ...insideStates, [court.id]: true };
+                setInsideStates(newStates);
+                await saveGeofenceStates(newStates);
+                
                 console.log(`🏀 Entered geofence: ${court.id}`);
 
                 // 🔥 UPDATE DATABASE: Increment people count
@@ -288,8 +338,12 @@ export default function MapScreen(): React.JSX.Element {
                   trigger: null,
                 });
 
-              } else if (!isInside && insideStates[court.id]) {
-                insideStates[court.id] = false;
+              } else if (!isInside && wasInside) {
+                // Exiting geofence
+                const newStates = { ...insideStates, [court.id]: false };
+                setInsideStates(newStates);
+                await saveGeofenceStates(newStates);
+                
                 console.log(`👋 Exited geofence: ${court.id}`);
 
                 // 🔥 UPDATE DATABASE: Decrement people count
@@ -309,6 +363,7 @@ export default function MapScreen(): React.JSX.Element {
                   trigger: null,
                 });
               }
+              // If isInside === wasInside, no state change - do nothing
             }
           } catch (error) {
             console.error('Error in dynamic geofencing:', error);
@@ -322,8 +377,14 @@ export default function MapScreen(): React.JSX.Element {
                 court.radius
               );
 
-              if (isInside && !insideStates[court.id]) {
-                insideStates[court.id] = true;
+              const wasInside = insideStates[court.id] || false;
+
+              // ONLY process if there's a state change (fallback)
+              if (isInside && !wasInside) {
+                const newStates = { ...insideStates, [court.id]: true };
+                setInsideStates(newStates);
+                await saveGeofenceStates(newStates);
+                
                 console.log(`Entered geofence (fallback): ${court.id}`);
 
                 // 🔥 UPDATE DATABASE: Increment people count (fallback)
@@ -342,8 +403,11 @@ export default function MapScreen(): React.JSX.Element {
                   trigger: null,
                 });
 
-              } else if (!isInside && insideStates[court.id]) {
-                insideStates[court.id] = false;
+              } else if (!isInside && wasInside) {
+                const newStates = { ...insideStates, [court.id]: false };
+                setInsideStates(newStates);
+                await saveGeofenceStates(newStates);
+                
                 console.log(`Exited geofence (fallback): ${court.id}`);
 
                 // 🔥 UPDATE DATABASE: Decrement people count (fallback)
@@ -372,7 +436,7 @@ export default function MapScreen(): React.JSX.Element {
         locationSubscription.then(sub => sub.remove());
       };
     })();
-  }, []);
+  }, [statesLoaded, insideStates]); // Add dependencies
 
   // 🔥 ACTIVE DATA REFRESH: Update court data every 10 seconds for real-time UI updates
   useEffect(() => {

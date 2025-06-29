@@ -55,7 +55,7 @@ export default function TabLayout() {
           tabBarLabel: 'Map',
           tabBarIcon: ({ color }) => <TabBarIcon name="map" color={color} />,
           headerRight: () => (
-            <Link href="/modal" asChild>
+            <Link href="/(tabs)/three" asChild>
               <Pressable>
                 {({ pressed }) => (
                   <FontAwesome
