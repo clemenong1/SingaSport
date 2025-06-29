@@ -151,8 +151,7 @@ SingaSport/
 ├── package.json                    # Dependencies and scripts
 ├── package-lock.json               # Locked dependency versions
 ├── README.md                       # Project documentation
-├── tsconfig.json                   # TypeScript configuration
-└── singasport-cd006-firebase-adminsdk-*.json  # Firebase service account keys
+└── tsconfig.json                   # TypeScript configuration
 ```
 
 ---
