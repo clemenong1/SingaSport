@@ -61,6 +61,90 @@ Before you begin, ensure you have the following installed and set up:
     - Ensure that your simulators in the background is running
     - Click 'i' for IOS simulator or 'a' for android simulator.
 
+## 🧪 Testing
+
+This section explains how to test the **Geofencing** and **Live Basketball Court Occupancy** features in the SingaSport app.
+
+---
+
+### 📍 Testing Geofencing & Court Occupancy for Milestone 2
+
+Use these steps to simulate entering and exiting a geofenced basketball court zone using an emulator or physical device.
+
+---
+
+#### 1. Start the Expo Development Server
+
+Clear cache and start the app using Expo’s tunnel (recommended for emulators and real devices):
+
+```bash
+npx expo start --clear --tunnel
+```
+
+---
+
+#### 2. Set Emulator Location to VP Sheltered Basketball Court
+
+```bash
+# In Android Emulator:
+# 1. Open the Extended Controls (three-dot menu on the emulator toolbar)
+# 2. Go to "Location"
+# 3. Enter the following coordinates and click 'Send'
+
+Latitude: 1.4292847
+Longitude: 103.7974001
+```
+
+Alternatively, you can use ADB to set the location directly:
+
+```bash
+adb emu geo fix 103.7974001 1.4292847
+```
+
+---
+
+#### 3. Simulate Arrival at the Court
+
+```text
+1. On your emulator or phone, open the app.
+2. In the search bar, type: VP Sheltered Basketball Court
+3. Tap the first result.
+4. Wait 30–60 seconds.
+5. The live count for the court should increase by 1.
+
+🔄 If the count does not refresh automatically, press the back button and re-select the court.
+```
+
+---
+
+#### 4. Simulate Leaving the Court
+
+```text
+1. Change your emulator’s location to a different coordinate (outside the geofence).
+
+   Example:
+   Latitude: 1.3521
+   Longitude: 103.8198
+
+   Or via ADB:
+   adb emu geo fix 103.8198 1.3521
+
+2. Wait 30–60 seconds.
+3. The live count for VP Sheltered Basketball Court should decrease by 1.
+
+🔄 If the count does not update immediately, press the back button and re-select the court.
+```
+
+---
+
+### ✅ Notes
+
+- Ensure location permissions are **granted** for the app on your device/emulator.
+- Firestore’s real-time listener will sync the updated count as soon as the geofence event is triggered.
+- You can verify updates in **Firebase Console → Firestore → courts/{courtId} → currentCount**.
+
+> 💡 Tip: Use `adb emu geo fix <longitude> <latitude>` for fast GPS testing in emulators.
+
 ---
 
 ## 🛠️ Project Structure
