@@ -73,7 +73,7 @@ export default function TabLayout() {
         name="two"
         options={{
           headerTitle: 'Add your post',
-          tabBarLabel: 'Contribute',
+          tabBarLabel: 'Events',
           tabBarIcon: ({ color }) => <TabBarIcon name="plus" color={color} />,
         }}
       />
