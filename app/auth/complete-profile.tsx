@@ -63,7 +63,7 @@ export default function CompleteProfileScreen() {
 
       console.log('Profile completed successfully');
       Alert.alert('Success', 'Profile completed successfully!', [
-        { text: 'OK', onPress: () => router.replace('/(tabs)') }
+        { text: 'OK', onPress: () => router.replace('/(tabs)/main') }
       ]);
       
     } catch (error: any) {
