@@ -33,10 +33,8 @@ export default function RootLayout() {
     if (error) throw error;
   }, [error]);
 
-  // Simple authentication state listener without navigation
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
-      console.log('Auth state changed:', user ? 'User logged in' : 'User logged out');
       setUser(user);
       setAuthLoading(false);
     });
@@ -63,7 +61,6 @@ export default function RootLayout() {
     registerForPushNotificationsAsync();
 
     const subscription = Notifications.addNotificationReceivedListener(notification => {
-      console.log('Notification received:', notification);
     });
 
     return () => subscription.remove();
@@ -93,20 +90,18 @@ function RootLayoutNav({ user }: { user: User | null }) {
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
       <Stack screenOptions={{ headerShown: false }}>
         {user ? (
-          // User is signed in, show tabs and edit profile
           <>
             <Stack.Screen name="(tabs)" />
             <Stack.Screen name="editProfile" options={{ presentation: 'modal' }} />
             <Stack.Screen name="search" options={{ headerShown: false }} />
           </>
         ) : (
-          // User is not signed in, show login and signup
           <>
             <Stack.Screen name="login" />
             <Stack.Screen name="signup" />
           </>
         )}
-        {/* Profile completion screen - available for Google sign-in users */}
+        {}
         <Stack.Screen name="completeProfile" options={{ headerShown: false }} />
         <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
       </Stack>

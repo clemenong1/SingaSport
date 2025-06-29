@@ -52,20 +52,17 @@ export default function CompleteProfileScreen() {
 
     setLoading(true);
     try {
-      // Create user profile in Firestore
+
       await userService.createUserProfile(user.uid, {
         username: formData.username,
         email: user.email || '',
         country: formData.country,
         phoneNumber: formData.phoneNumber || undefined,
         profileImageUrl: user.photoURL || undefined
-      });
-
-      console.log('Profile completed successfully');
-      Alert.alert('Success', 'Profile completed successfully!', [
+      });Alert.alert('Success', 'Profile completed successfully!', [
         { text: 'OK', onPress: () => router.replace('/(tabs)/main') }
       ]);
-      
+
     } catch (error: any) {
       console.error('Profile completion error:', error);
       Alert.alert('Error', 'Failed to complete profile. Please try again.');
@@ -121,8 +118,8 @@ export default function CompleteProfileScreen() {
           keyboardType="phone-pad"
         />
 
-        <TouchableOpacity 
-          style={[styles.button, loading && styles.buttonDisabled]} 
+        <TouchableOpacity
+          style={[styles.button, loading && styles.buttonDisabled]}
           onPress={completeProfile}
           disabled={loading}
         >
@@ -204,4 +201,4 @@ const styles = StyleSheet.create({
     fontSize: 16,
     textAlign: 'center',
   },
-}); 
+});

@@ -74,12 +74,11 @@ export default function CourtInfoScreen() {
 
   const initializeCourtInfo = async () => {
     try {
-      // Parse court data from params
+
       if (params.courtData) {
         const courtData = JSON.parse(params.courtData as string) as Court;
         setCourt(courtData);
-        
-        // Get user location for distance calculation
+
         const { status } = await Location.requestForegroundPermissionsAsync();
         if (status === 'granted') {
           const location = await Location.getCurrentPositionAsync({});
@@ -87,8 +86,7 @@ export default function CourtInfoScreen() {
             latitude: location.coords.latitude,
             longitude: location.coords.longitude,
           });
-          
-          // Calculate distance
+
           const dist = calculateDistance(
             location.coords.latitude,
             location.coords.longitude,
@@ -97,11 +95,9 @@ export default function CourtInfoScreen() {
           );
           setDistance(dist.toFixed(2));
         }
-        
-        // Load sample photos (in real app, fetch from Firebase)
+
         loadCourtPhotos(courtData.place_id);
-        
-        // Load reports for this court
+
         loadCourtReports(courtData.place_id);
       }
     } catch (error) {
@@ -126,7 +122,7 @@ export default function CourtInfoScreen() {
   };
 
   const loadCourtPhotos = (courtId: string) => {
-    // Sample photos - in real app, fetch from Firebase Storage
+
     const samplePhotos: CourtPhoto[] = [
       {
         id: '1',
@@ -151,7 +147,7 @@ export default function CourtInfoScreen() {
     try {
       const reportsRef = collection(db, 'basketballCourts', courtId, 'reports');
       const reportsQuery = query(reportsRef, orderBy('reportedAt', 'desc'));
-      
+
       const unsubscribe = onSnapshot(reportsQuery, (snapshot) => {
         const reportsData: Report[] = [];
         snapshot.forEach((doc) => {
@@ -167,7 +163,6 @@ export default function CourtInfoScreen() {
         setLoadingReports(false);
       });
 
-      // Return cleanup function for useEffect
       return unsubscribe;
     } catch (error) {
       console.error('Error setting up reports listener:', error);
@@ -177,7 +172,7 @@ export default function CourtInfoScreen() {
 
   const openInMaps = () => {
     if (!court) return;
-    
+
     const scheme = Platform.select({ ios: 'maps:0,0?q=', android: 'geo:0,0?q=' });
     const latLng = `${court.latitude},${court.longitude}`;
     const label = court.name;
@@ -193,7 +188,7 @@ export default function CourtInfoScreen() {
 
   const navigateToReport = () => {
     if (!court) return;
-    
+
     router.push({
       pathname: '/courts/report-page' as any,
       params: {
@@ -232,9 +227,9 @@ export default function CourtInfoScreen() {
 
   const formatReportDate = (reportedAt: any) => {
     if (!reportedAt) return 'Unknown date';
-    
+
     try {
-      // Handle Firestore Timestamp
+
       const date = reportedAt.toDate ? reportedAt.toDate() : new Date(reportedAt);
       const now = new Date();
       const diffInMs = now.getTime() - date.getTime();
@@ -357,7 +352,6 @@ export default function CourtInfoScreen() {
               description={court.address}
             />
           </MapView>
-          
 
         </View>
 
@@ -370,7 +364,7 @@ export default function CourtInfoScreen() {
             </Text>
             <Text style={styles.statLabel}>Rating</Text>
           </View>
-          
+
           <View style={styles.statItem}>
             <Ionicons name="people" size={20} color="#007AFF" />
             <Text style={styles.statValue}>
@@ -378,7 +372,7 @@ export default function CourtInfoScreen() {
             </Text>
             <Text style={styles.statLabel}>People</Text>
           </View>
-          
+
           <View style={styles.statItem}>
             <Ionicons name="location" size={20} color="#34C759" />
             <Text style={styles.statValue}>
@@ -391,13 +385,13 @@ export default function CourtInfoScreen() {
         {/* Court Information */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Court Information</Text>
-          
+
           <View style={styles.infoCard}>
             <View style={styles.infoRow}>
               <Ionicons name="location-outline" size={20} color="#666" />
               <Text style={styles.infoText}>{court.address}</Text>
             </View>
-            
+
             {court.rating && (
               <View style={styles.infoRow}>
                 <Ionicons name="star-outline" size={20} color="#666" />
@@ -406,7 +400,7 @@ export default function CourtInfoScreen() {
                 </Text>
               </View>
             )}
-            
+
             <View style={styles.infoRow}>
               <Ionicons name="people-outline" size={20} color="#666" />
               <Text style={styles.infoText}>
@@ -427,7 +421,7 @@ export default function CourtInfoScreen() {
               <Text style={styles.addPhotoText}>Add Photo</Text>
             </TouchableOpacity>
           </View>
-          
+
           {photos.length > 0 ? (
             <FlatList
               data={photos}
@@ -447,19 +441,19 @@ export default function CourtInfoScreen() {
 
         {/* Action Buttons */}
         <View style={styles.section}>
-          <TouchableOpacity 
-            style={[styles.actionButton, styles.reportButton]} 
+          <TouchableOpacity
+            style={[styles.actionButton, styles.reportButton]}
             onPress={() => navigateToReport()}
           >
             <Ionicons name="flag-outline" size={20} color="#FF6B6B" />
             <Text style={[styles.actionButtonText, styles.reportButtonText]}>Report an Issue</Text>
           </TouchableOpacity>
-          
+
           <TouchableOpacity style={styles.actionButton} onPress={openInMaps}>
             <Ionicons name="navigate" size={20} color="white" />
             <Text style={styles.actionButtonText}>Get Directions</Text>
           </TouchableOpacity>
-          
+
           <TouchableOpacity style={[styles.actionButton, styles.secondaryButton]}>
             <Ionicons name="share-outline" size={20} color="#007AFF" />
             <Text style={[styles.actionButtonText, styles.secondaryButtonText]}>Share Court</Text>
@@ -487,9 +481,9 @@ export default function CourtInfoScreen() {
                       {formatReportDate(report.reportedAt)}
                     </Text>
                   </View>
-                  
+
                   <Text style={styles.reportDescription}>{report.description}</Text>
-                  
+
                   <View style={styles.reportFooter}>
                     <View style={styles.reportUser}>
                       <Ionicons name="person-circle-outline" size={16} color="#666" />
@@ -801,7 +795,7 @@ const styles = StyleSheet.create({
     color: '#666',
     marginLeft: 16,
   },
-  // Reports Styles
+
   reportsLoadingContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -912,4 +906,4 @@ const styles = StyleSheet.create({
     marginTop: 8,
     textAlign: 'center',
   },
-}); 
+});

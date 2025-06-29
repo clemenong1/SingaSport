@@ -65,28 +65,23 @@ export default function SignUpScreen() {
 
     setLoading(true);
     try {
-      // Create Firebase Auth user
+
       const userCredential = await createUserWithEmailAndPassword(auth, formData.email, formData.password);
       const user = userCredential.user;
 
-      // Update the user's display name
       await updateProfile(user, {
         displayName: formData.username
       });
 
-      // Create user profile in Firestore using the service
       await userService.createUserProfile(user.uid, {
         username: formData.username,
         email: formData.email,
         country: formData.country,
         phoneNumber: formData.phoneNumber || undefined
-      });
-
-      console.log('Account created successfully');
-      Alert.alert('Success', 'Account created successfully!', [
+      });Alert.alert('Success', 'Account created successfully!', [
         { text: 'OK', onPress: () => router.replace('/(tabs)/main') }
       ]);
-      
+
     } catch (error: any) {
       console.error('Signup error:', error);
       Alert.alert('Sign Up Failed', error.message);
@@ -156,8 +151,8 @@ export default function SignUpScreen() {
           keyboardType="phone-pad"
         />
 
-        <TouchableOpacity 
-          style={[styles.button, loading && styles.buttonDisabled]} 
+        <TouchableOpacity
+          style={[styles.button, loading && styles.buttonDisabled]}
           onPress={signUp}
           disabled={loading}
         >
@@ -166,8 +161,8 @@ export default function SignUpScreen() {
           </Text>
         </TouchableOpacity>
 
-              <TouchableOpacity 
-        style={styles.linkButton} 
+              <TouchableOpacity
+        style={styles.linkButton}
         onPress={() => router.push('/auth/login')}
       >
         <Text style={styles.linkText}>Already have an account? Log In</Text>
@@ -235,4 +230,4 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     textDecorationLine: 'underline',
   },
-}); 
+});

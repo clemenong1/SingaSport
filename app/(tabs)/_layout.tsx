@@ -6,7 +6,6 @@ import { Pressable } from 'react-native';
 import Colors from '../../src/constants/Colors';
 import { useColorScheme } from '../../src/components/useColorScheme';
 
-// icons on the web at https://icons.expo.fyi/
 function TabBarIcon(props: {
   name: React.ComponentProps<typeof FontAwesome>['name'];
   color: string;
