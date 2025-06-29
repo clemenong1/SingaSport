@@ -36,8 +36,7 @@ export default function CreateGameModal({
   const [courts, setCourts] = useState<BasketballCourtExtended[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadingCourts, setLoadingCourts] = useState(true);
-  
-  // Form state
+
   const [selectedCourtId, setSelectedCourtId] = useState<string>('');
   const [gameDate, setGameDate] = useState(new Date());
   const [gameTime, setGameTime] = useState(new Date());
@@ -51,11 +50,10 @@ export default function CreateGameModal({
   useEffect(() => {
     if (visible) {
       loadCourts();
-      
-      // Pre-select court if provided, otherwise reset form
+
       if (selectedCourt) {
         setSelectedCourtId(selectedCourt.place_id);
-        // Don't reset other form fields when a court is pre-selected
+
         setGameDate(new Date());
         setGameTime(new Date());
         setMaxPlayers('10');
@@ -74,15 +72,14 @@ export default function CreateGameModal({
       const courtsRef = collection(db, 'basketballCourts');
       const q = query(courtsRef, orderBy('name', 'asc'));
       const querySnapshot = await getDocs(q);
-      
+
       const courtsData: BasketballCourtExtended[] = [];
       querySnapshot.forEach((doc) => {
         const data = doc.data();
-        
-        // Handle different possible location formats
+
         let latitude = 0;
         let longitude = 0;
-        
+
         if (data.location) {
           if (data.location.latitude && data.location.longitude) {
             latitude = data.location.latitude;
@@ -92,7 +89,7 @@ export default function CreateGameModal({
             longitude = data.location._long;
           }
         }
-        
+
         courtsData.push({
           place_id: doc.id, // Use document ID as place_id (this is how it's stored)
           name: data.name || 'Unknown Court',
@@ -106,7 +103,7 @@ export default function CreateGameModal({
           openingHours: data.openingHours,
         } as BasketballCourtExtended);
       });
-      
+
       setCourts(courtsData);
     } catch (error) {
       console.error('Error loading courts:', error);
@@ -132,7 +129,6 @@ export default function CreateGameModal({
       return false;
     }
 
-    // Combine date and time
     const scheduledDateTime = new Date(
       gameDate.getFullYear(),
       gameDate.getMonth(),
@@ -165,7 +161,6 @@ export default function CreateGameModal({
         throw new Error('Selected court not found');
       }
 
-      // Combine date and time
       const scheduledDateTime = new Date(
         gameDate.getFullYear(),
         gameDate.getMonth(),
@@ -189,8 +184,7 @@ export default function CreateGameModal({
       };
 
       const gameId = await gameService.createGameSchedule(gameData);
-      
-      // Create the game object to pass back
+
       const createdGame: GameSchedule = {
         ...gameData,
         id: gameId,
@@ -200,7 +194,7 @@ export default function CreateGameModal({
       onGameCreated(createdGame);
       resetForm();
       onClose();
-      
+
       Alert.alert('Success', 'Game scheduled successfully!');
     } catch (error: any) {
       console.error('Error creating game:', error);
@@ -302,7 +296,7 @@ export default function CreateGameModal({
           {/* Date and Time */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Date & Time</Text>
-            
+
             <TouchableOpacity
               onPress={() => setShowDatePicker(true)}
               style={styles.dateTimeButton}
@@ -521,4 +515,4 @@ const styles = StyleSheet.create({
     backgroundColor: '#f9f9f9',
     height: 100,
   },
-}); 
+});

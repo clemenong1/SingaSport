@@ -146,7 +146,7 @@ export default function ReportPageScreen() {
 
     setLoading(true);
     try {
-      // Create report data
+
       const reportData = {
         courtId: court.place_id,
         courtName: court.name,
@@ -158,11 +158,9 @@ export default function ReportPageScreen() {
         status: 'open', // Can be 'open', 'investigating', 'resolved'
       };
 
-      // Add to reports subcollection
       const reportsRef = collection(db, 'basketballCourts', court.place_id, 'reports');
       await addDoc(reportsRef, reportData);
 
-      // Show success message
       Alert.alert(
         'Report Submitted',
         'Thank you for reporting this issue. The court management will review your report.',
@@ -267,7 +265,7 @@ export default function ReportPageScreen() {
           <Text style={styles.sectionSubtitle}>
             Add photos to help illustrate the issue
           </Text>
-          
+
           {images.length > 0 && (
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.imagesContainer}>
               {images.map((image) => (
@@ -488,4 +486,4 @@ const styles = StyleSheet.create({
     color: '#333',
     marginLeft: 12,
   },
-}); 
+});
