@@ -33,15 +33,13 @@ const GameCard = ({ game, currentUserId, onRSVP, isLoading }: GameCardProps) => 
   const formatDateTime = (date: Date): string => {
     const today = new Date();
     const gameDate = new Date(date);
-    
-    // Check if game is today
+
     const isToday = gameDate.toDateString() === today.toDateString();
-    
-    // Check if game is tomorrow
+
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
     const isTomorrow = gameDate.toDateString() === tomorrow.toDateString();
-    
+
     const timeString = gameDate.toLocaleTimeString('en-US', {
       hour: 'numeric',
       minute: '2-digit',
@@ -78,14 +76,14 @@ const GameCard = ({ game, currentUserId, onRSVP, isLoading }: GameCardProps) => 
 
   const handleRSVP = () => {
     if (isLoading || !game.id) return;
-    
+
     if (!isUserRSVPd && isGameFull) {
       Alert.alert('Game Full', 'This game has reached maximum capacity.');
       return;
     }
 
     const action = isUserRSVPd ? 'leave' : 'join';
-    const message = isUserRSVPd 
+    const message = isUserRSVPd
       ? 'Are you sure you want to leave this game?'
       : 'Would you like to join this game?';
 
@@ -192,13 +190,11 @@ export default function ContributeTab() {
   const [searchQuery, setSearchQuery] = useState('');
   const [filteredGames, setFilteredGames] = useState<GameSchedule[]>([]);
 
-  // Filter states
   const [filterType, setFilterType] = useState<'all' | 'joined' | 'created'>('all');
 
   useEffect(() => {
     loadGames();
-    
-    // Set up real-time listener
+
     const unsubscribe = gameService.subscribeToGameSchedules((updatedGames) => {
       setGames(updatedGames);
       setLoading(false);
@@ -209,11 +205,9 @@ export default function ContributeTab() {
     };
   }, []);
 
-  // Filter games based on search and filter type
   useEffect(() => {
     let filtered = games;
 
-    // Apply search filter
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter(
@@ -225,7 +219,6 @@ export default function ContributeTab() {
       );
     }
 
-    // Apply type filter
     if (auth.currentUser && filterType !== 'all') {
       const userId = auth.currentUser.uid;
       if (filterType === 'joined') {
@@ -277,15 +270,14 @@ export default function ContributeTab() {
     try {
       setRsvpLoading(gameId);
       await gameService.toggleRSVP(gameId, auth.currentUser.uid, isJoining);
-      
-      // Update local state immediately for better UX
+
       setGames((prevGames) =>
         prevGames.map((game) => {
           if (game.id === gameId) {
             const updatedRsvpUsers = isJoining
               ? [...(game.rsvpUsers || []), auth.currentUser!.uid]
               : (game.rsvpUsers || []).filter((uid) => uid !== auth.currentUser!.uid);
-            
+
             return {
               ...game,
               peopleAttending: game.peopleAttending + (isJoining ? 1 : -1),
@@ -303,11 +295,7 @@ export default function ContributeTab() {
     }
   };
 
-  const handleGameCreated = (newGame: GameSchedule) => {
-    // Don't manually add the game since the real-time listener will handle it
-    // This prevents duplicate entries
-    console.log('✅ Game created successfully:', newGame.id);
-  };
+  const handleGameCreated = (newGame: GameSchedule) => {};
 
   const renderGameCard = ({ item }: { item: GameSchedule }) => (
     <GameCard

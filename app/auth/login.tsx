@@ -20,10 +20,7 @@ export default function LoginScreen() {
   const signIn = async () => {
     setLoading(true);
     try {
-      await signInWithEmailAndPassword(auth, email, password);
-      console.log('Sign in successful');
-      // Navigate to tabs
-      router.replace('/(tabs)/main');
+      await signInWithEmailAndPassword(auth, email, password);router.replace('/(tabs)/main');
     } catch (error: any) {
       Alert.alert('Sign In Failed', error.message);
     } finally {
@@ -54,8 +51,8 @@ export default function LoginScreen() {
         secureTextEntry
       />
 
-      <TouchableOpacity 
-        style={[styles.button, loading && styles.buttonDisabled]} 
+      <TouchableOpacity
+        style={[styles.button, loading && styles.buttonDisabled]}
         onPress={signIn}
         disabled={loading}
       >
@@ -64,8 +61,8 @@ export default function LoginScreen() {
         </Text>
       </TouchableOpacity>
 
-      <TouchableOpacity 
-        style={styles.linkButton} 
+      <TouchableOpacity
+        style={styles.linkButton}
         onPress={() => router.push('/auth/signup')}
       >
         <Text style={styles.linkText}>Don't have an account? Sign Up</Text>
@@ -122,4 +119,4 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     textDecorationLine: 'underline',
   },
-}); 
+});

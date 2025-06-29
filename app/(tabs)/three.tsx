@@ -12,7 +12,6 @@ export default function ProfileScreen() {
   const [loading, setLoading] = useState(true);
   const [profileImage, setProfileImage] = useState<string | null>(null);
 
-  // Refresh profile data when screen comes into focus
   useFocusEffect(
     useCallback(() => {
       loadUserProfile();
@@ -24,8 +23,7 @@ export default function ProfileScreen() {
       if (auth.currentUser) {
         const profile = await userService.getUserProfile(auth.currentUser.uid);
         setUserProfile(profile);
-        
-        // Load profile image if it exists
+
         if (profile?.profileImageUrl) {
           setProfileImage(profile.profileImageUrl);
         }
@@ -39,15 +37,14 @@ export default function ProfileScreen() {
 
   const handleImagePicker = async () => {
     try {
-      // Request permissions
+
       const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      
+
       if (permissionResult.granted === false) {
         Alert.alert('Permission required', 'Permission to access camera roll is required!');
         return;
       }
 
-      // Launch image picker
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
@@ -56,10 +53,7 @@ export default function ProfileScreen() {
       });
 
       if (!result.canceled && result.assets[0]) {
-        setProfileImage(result.assets[0].uri);
-        // TODO: Upload to Firebase Storage and update profile
-        console.log('Selected image:', result.assets[0].uri);
-      }
+        setProfileImage(result.assets[0].uri);}
     } catch (error) {
       console.error('Error picking image:', error);
       Alert.alert('Error', 'Failed to pick image');
@@ -81,9 +75,7 @@ export default function ProfileScreen() {
           style: 'destructive',
           onPress: async () => {
             try {
-              await signOut(auth);
-              console.log('Signed out successfully');
-              router.replace('/auth/login');
+              await signOut(auth);router.replace('/auth/login');
             } catch (error: any) {
               Alert.alert('Error', 'Failed to sign out: ' + error.message);
             }
@@ -117,7 +109,7 @@ export default function ProfileScreen() {
             <Ionicons name="camera" size={20} color="#fff" />
           </View>
         </TouchableOpacity>
-        
+
         <Text style={styles.userName}>{userProfile?.username || 'User'}</Text>
         <Text style={styles.userEmail}>{userProfile?.email || 'No email'}</Text>
       </View>
@@ -137,23 +129,23 @@ export default function ProfileScreen() {
             <Text style={styles.infoLabel}>Username</Text>
             <Text style={styles.infoValue}>{userProfile?.username || 'Not set'}</Text>
           </View>
-          
+
           <View style={styles.divider} />
-          
+
           <View style={styles.infoItem}>
             <Text style={styles.infoLabel}>Email</Text>
             <Text style={styles.infoValue}>{userProfile?.email || 'Not set'}</Text>
           </View>
-          
+
           <View style={styles.divider} />
-          
+
           <View style={styles.infoItem}>
             <Text style={styles.infoLabel}>Country</Text>
             <Text style={styles.infoValue}>{userProfile?.country || 'Not set'}</Text>
           </View>
-          
+
           <View style={styles.divider} />
-          
+
           <View style={styles.infoItem}>
             <Text style={styles.infoLabel}>Phone Number</Text>
             <Text style={styles.infoValue}>{userProfile?.phoneNumber || 'Not set'}</Text>

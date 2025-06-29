@@ -44,7 +44,7 @@ export default function SearchScreen() {
   }, []);
 
   useEffect(() => {
-    // Fetch all courts from Firebase when component mounts
+
     fetchCourtsFromFirebase();
   }, []);
 
@@ -69,19 +69,13 @@ export default function SearchScreen() {
   const fetchCourtsFromFirebase = async () => {
     setLoading(true);
     setError(null);
-    try {
-      console.log('Fetching courts from Firebase...');
-      const courtsCollection = collection(db, 'basketballCourts');
+    try {const courtsCollection = collection(db, 'basketballCourts');
       const courtSnapshot = await getDocs(courtsCollection);
-      
+
       const courtsList = courtSnapshot.docs.map(doc => {
-        const data = doc.data();
-        console.log('Court data:', data);
-        
-        // Handle different possible location formats
-        let latitude = 0;
+        const data = doc.data();let latitude = 0;
         let longitude = 0;
-        
+
         if (data.location) {
           if (data.location.latitude && data.location.longitude) {
             latitude = data.location.latitude;
@@ -91,10 +85,9 @@ export default function SearchScreen() {
             longitude = data.location._long;
           }
         }
-        
-        // Determine if the court is currently open based on opening hours
+
         const currentlyOpen = isCourtCurrentlyOpen(data.openingHours);
-        
+
         return {
           place_id: doc.id,
           name: data.name || 'Unknown Court',
@@ -132,12 +125,11 @@ export default function SearchScreen() {
     return R * c;
   };
 
-  // Filter courts with prefix matching
   const filteredCourts = courts
     .filter((court) => {
       const searchLower = search.toLowerCase();
       const nameLower = court.name.toLowerCase();
-      // Check if the name starts with the search term (prefix matching)
+
       return nameLower.startsWith(searchLower);
     })
     .sort((a, b) => {
@@ -206,7 +198,7 @@ export default function SearchScreen() {
           style={styles.list}
           onScrollBeginDrag={Keyboard.dismiss}
           renderItem={({ item }) => (
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.card}
               onPress={() => navigateToCourtInfo(item)}
               activeOpacity={0.7}

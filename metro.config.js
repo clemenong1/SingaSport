@@ -3,11 +3,9 @@ const path = require('path');
 
 const config = getDefaultConfig(__dirname);
 
-// Add support for the new src directory structure
 config.resolver.sourceExts.push('cjs');
 config.resolver.unstable_enablePackageExports = false;
 
-// Add alias support for @ imports
 config.resolver.alias = {
   '@': path.resolve(__dirname, 'src'),
   '@/components': path.resolve(__dirname, 'src/components'),

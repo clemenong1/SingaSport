@@ -23,8 +23,6 @@ import { isCourtCurrentlyOpen } from '../../src/utils';
 import geohash from 'ngeohash';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// Remove module-level insideStates - now handled as component state
-
 interface Court {
   place_id: string;
   name: string;
@@ -56,22 +54,16 @@ export default function MapScreen(): React.JSX.Element {
   const [selectedCourtId, setSelectedCourtId] = useState<string | null>(null);
   const [nearbyCourts, setNearbyCourts] = useState<BasketballCourt[]>([]);
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
-  
-  // AsyncStorage state management for geofences
+
   const [insideStates, setInsideStates] = useState<Record<string, boolean>>({});
   const [statesLoaded, setStatesLoaded] = useState<boolean>(false);
 
-  // Load persisted geofence states on app start
   const loadGeofenceStates = async () => {
     try {
       const savedStates = await AsyncStorage.getItem('geofenceStates');
       if (savedStates) {
         const parsedStates = JSON.parse(savedStates);
-        setInsideStates(parsedStates);
-        console.log('📱 Loaded persisted geofence states:', parsedStates);
-      } else {
-        console.log('📱 No saved geofence states found, starting fresh');
-      }
+        setInsideStates(parsedStates);} else {}
     } catch (error) {
       console.error('Error loading geofence states:', error);
     } finally {
@@ -79,33 +71,29 @@ export default function MapScreen(): React.JSX.Element {
     }
   };
 
-  // Save geofence states to AsyncStorage
   const saveGeofenceStates = async (newStates: Record<string, boolean>) => {
     try {
-      await AsyncStorage.setItem('geofenceStates', JSON.stringify(newStates));
-      console.log('💾 Saved geofence states:', newStates);
-    } catch (error) {
+      await AsyncStorage.setItem('geofenceStates', JSON.stringify(newStates));} catch (error) {
       console.error('Error saving geofence states:', error);
     }
   };
 
-  // Load states when component mounts
   useEffect(() => {
     loadGeofenceStates();
   }, []);
 
   const calculateDistanceKm = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
     const toRad = (value: number) => (value * Math.PI) / 180;
-  
+
     const R = 6371;
     const dLat = toRad(lat2 - lat1);
     const dLon = toRad(lon2 - lon1);
-  
+
     const a =
       Math.sin(dLat / 2) * Math.sin(dLat / 2) +
       Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
       Math.sin(dLon / 2) * Math.sin(dLon / 2);
-  
+
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     return R * c;
   };
@@ -119,11 +107,9 @@ export default function MapScreen(): React.JSX.Element {
       const courtsRef = collection(db, 'basketballCourts');
       const courtsQuery = query(courtsRef, where('name', '==', courtName), limit(1));
       const snapshot = await getDocs(courtsQuery);
-      
+
       if (!snapshot.empty) {
-        const docId = snapshot.docs[0].id;
-        console.log(`Found court document ID: ${docId} for court: ${courtName}`);
-        return docId;
+        const docId = snapshot.docs[0].id;return docId;
       } else {
         console.error(`No document found for court: ${courtName}`);
         return null;
@@ -146,21 +132,16 @@ export default function MapScreen(): React.JSX.Element {
       }
 
       const courtRef = doc(db, 'basketballCourts', courtDocId);
-      
-      // Get current count to ensure we don't go below 0
+
       const courtDoc = await getDoc(courtRef);
       if (courtDoc.exists()) {
         const currentCount = courtDoc.data().peopleNumber || 0;
-        
+
         if (currentCount > 0) {
           await updateDoc(courtRef, {
             peopleNumber: increment(-1)
-          });
-          console.log(`✅ Decremented people count for ${courtName} (Doc ID: ${courtDocId})`);
-          return true;
-        } else {
-          console.log(`⚠️ People count already 0 for ${courtName}, not decrementing`);
-          return true; // Not an error, just already at minimum
+          });return true;
+        } else {return true; // Not an error, just already at minimum
         }
       } else {
         console.error(`Court document not found: ${courtDocId}`);
@@ -178,8 +159,7 @@ export default function MapScreen(): React.JSX.Element {
   const incrementPeopleCountOptimized = async (courtName: string, docId?: string): Promise<boolean> => {
     try {
       let courtDocId = docId;
-      
-      // Only search for docId if not provided
+
       if (!courtDocId) {
         const foundDocId = await findCourtDocumentId(courtName);
         if (!foundDocId) {
@@ -190,13 +170,10 @@ export default function MapScreen(): React.JSX.Element {
       }
 
       const courtRef = doc(db, 'basketballCourts', courtDocId);
-      
+
       await updateDoc(courtRef, {
         peopleNumber: increment(1)
-      });
-      
-      console.log(`✅ Incremented people count for ${courtName} (Doc ID: ${courtDocId})`);
-      return true;
+      });return true;
     } catch (error) {
       console.error(`Error incrementing people count for ${courtName}:`, error);
       return false;
@@ -209,8 +186,7 @@ export default function MapScreen(): React.JSX.Element {
   const decrementPeopleCountOptimized = async (courtName: string, docId?: string): Promise<boolean> => {
     try {
       let courtDocId = docId;
-      
-      // Only search for docId if not provided
+
       if (!courtDocId) {
         const foundDocId = await findCourtDocumentId(courtName);
         if (!foundDocId) {
@@ -221,21 +197,16 @@ export default function MapScreen(): React.JSX.Element {
       }
 
       const courtRef = doc(db, 'basketballCourts', courtDocId);
-      
-      // Get current count to ensure we don't go below 0
+
       const courtDoc = await getDoc(courtRef);
       if (courtDoc.exists()) {
         const currentCount = courtDoc.data().peopleNumber || 0;
-        
+
         if (currentCount > 0) {
           await updateDoc(courtRef, {
             peopleNumber: increment(-1)
-          });
-          console.log(`✅ Decremented people count for ${courtName} (Doc ID: ${courtDocId})`);
-          return true;
-        } else {
-          console.log(`⚠️ People count already 0 for ${courtName}, not decrementing`);
-          return true; // Not an error, just already at minimum
+          });return true;
+        } else {return true; // Not an error, just already at minimum
         }
       } else {
         console.error(`Court document not found: ${courtDocId}`);
@@ -248,27 +219,23 @@ export default function MapScreen(): React.JSX.Element {
   };
 
   useEffect(() => {
-    // Don't start location tracking until states are loaded
-    if (!statesLoaded) {
-      console.log('⏳ Waiting for geofence states to load before starting location tracking...');
-      return;
+
+    if (!statesLoaded) {return;
     }
 
     (async () => {
-      // Request notification permissions
+
       const { status: notificationStatus } = await Notifications.requestPermissionsAsync();
-      
-      // Request location permissions
+
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
         Alert.alert('Permission denied', 'Location access is required.');
         return;
       }
 
-      // Get initial location
       const location = await Location.getCurrentPositionAsync({});
       const { latitude, longitude } = location.coords;
-      
+
       setUserLocation({ latitude, longitude });
       setRegion({
         latitude,
@@ -279,30 +246,19 @@ export default function MapScreen(): React.JSX.Element {
 
       fetchNearbyCourts(latitude, longitude);
 
-      // Start foreground location tracking with dynamic geofencing
       const locationSubscription = Location.watchPositionAsync(
         {
           accuracy: Location.Accuracy.Balanced,
           timeInterval: 10000, // Update every 10 seconds for people count tracking
-          // distanceInterval: 10, // REMOVED - was preventing frequent updates
+
         },
         async (location) => {
           const { latitude, longitude } = location.coords;
-          
-          // Add timestamp to track actual callback frequency
-          const timestamp = new Date().toLocaleTimeString();
-          console.log(`⏰ Location callback triggered at ${timestamp} - Lat: ${latitude}, Lng: ${longitude}`);
-          
-          // Update user location state
-          setUserLocation({ latitude, longitude });
-          
-          try {
-            // 🔥 DYNAMIC GEOFENCING: Fetch nearest courts every 5 seconds
-            console.log('🔄 Updating geofences based on current location...');
-            
-            const currentNearbyCourts = await getNearbyBasketballCourtsFromLocation(latitude, longitude);
-            
-            // Check geofences using freshly fetched nearby courts
+
+          const timestamp = new Date().toLocaleTimeString();setUserLocation({ latitude, longitude });
+
+          try {const currentNearbyCourts = await getNearbyBasketballCourtsFromLocation(latitude, longitude);
+
             for (const court of currentNearbyCourts) {
               const isInside = geolib.isPointWithinRadius(
                 { latitude, longitude },
@@ -312,24 +268,15 @@ export default function MapScreen(): React.JSX.Element {
 
               const wasInside = insideStates[court.id] || false;
 
-              // ONLY process if there's a state change
               if (isInside && !wasInside) {
-                // Entering geofence
+
                 const newStates = { ...insideStates, [court.id]: true };
                 setInsideStates(newStates);
-                await saveGeofenceStates(newStates);
-                
-                console.log(`🏀 Entered geofence: ${court.id}`);
-
-                // 🔥 UPDATE DATABASE: Increment people count
-                const incrementSuccess = await incrementPeopleCountOptimized(court.id, court.docId);
-                if (incrementSuccess) {
-                  console.log(`📊 Database updated: +1 person at ${court.id}`);
-                } else {
+                await saveGeofenceStates(newStates);const incrementSuccess = await incrementPeopleCountOptimized(court.id, court.docId);
+                if (incrementSuccess) {} else {
                   console.error(`❌ Failed to update database for ${court.id}`);
                 }
 
-                // Show notification
                 Notifications.scheduleNotificationAsync({
                   content: {
                     title: `Entered ${court.id}`,
@@ -339,22 +286,14 @@ export default function MapScreen(): React.JSX.Element {
                 });
 
               } else if (!isInside && wasInside) {
-                // Exiting geofence
+
                 const newStates = { ...insideStates, [court.id]: false };
                 setInsideStates(newStates);
-                await saveGeofenceStates(newStates);
-                
-                console.log(`👋 Exited geofence: ${court.id}`);
-
-                // 🔥 UPDATE DATABASE: Decrement people count
-                const decrementSuccess = await decrementPeopleCountOptimized(court.id, court.docId);
-                if (decrementSuccess) {
-                  console.log(`📊 Database updated: -1 person at ${court.id}`);
-                } else {
+                await saveGeofenceStates(newStates);const decrementSuccess = await decrementPeopleCountOptimized(court.id, court.docId);
+                if (decrementSuccess) {} else {
                   console.error(`❌ Failed to update database for ${court.id}`);
                 }
 
-                // Show notification
                 Notifications.scheduleNotificationAsync({
                   content: {
                     title: `Left ${court.id}`,
@@ -363,14 +302,10 @@ export default function MapScreen(): React.JSX.Element {
                   trigger: null,
                 });
               }
-              // If isInside === wasInside, no state change - do nothing
+
             }
           } catch (error) {
-            console.error('Error in dynamic geofencing:', error);
-            
-            // Fallback to static geofencing if dynamic fails
-            console.log('⚠️ Falling back to static geofencing');
-            for (const court of nearbyCourts) {
+            console.error('Error in dynamic geofencing:', error);for (const court of nearbyCourts) {
               const isInside = geolib.isPointWithinRadius(
                 { latitude, longitude },
                 { latitude: court.latitude, longitude: court.longitude },
@@ -379,19 +314,11 @@ export default function MapScreen(): React.JSX.Element {
 
               const wasInside = insideStates[court.id] || false;
 
-              // ONLY process if there's a state change (fallback)
               if (isInside && !wasInside) {
                 const newStates = { ...insideStates, [court.id]: true };
                 setInsideStates(newStates);
-                await saveGeofenceStates(newStates);
-                
-                console.log(`Entered geofence (fallback): ${court.id}`);
-
-                // 🔥 UPDATE DATABASE: Increment people count (fallback)
-                const incrementSuccess = await incrementPeopleCountOptimized(court.id);
-                if (incrementSuccess) {
-                  console.log(`📊 Database updated (fallback): +1 person at ${court.id}`);
-                } else {
+                await saveGeofenceStates(newStates);const incrementSuccess = await incrementPeopleCountOptimized(court.id);
+                if (incrementSuccess) {} else {
                   console.error(`❌ Failed to update database (fallback) for ${court.id}`);
                 }
 
@@ -406,15 +333,8 @@ export default function MapScreen(): React.JSX.Element {
               } else if (!isInside && wasInside) {
                 const newStates = { ...insideStates, [court.id]: false };
                 setInsideStates(newStates);
-                await saveGeofenceStates(newStates);
-                
-                console.log(`Exited geofence (fallback): ${court.id}`);
-
-                // 🔥 UPDATE DATABASE: Decrement people count (fallback)
-                const decrementSuccess = await decrementPeopleCountOptimized(court.id);
-                if (decrementSuccess) {
-                  console.log(`📊 Database updated (fallback): -1 person at ${court.id}`);
-                } else {
+                await saveGeofenceStates(newStates);const decrementSuccess = await decrementPeopleCountOptimized(court.id);
+                if (decrementSuccess) {} else {
                   console.error(`❌ Failed to update database (fallback) for ${court.id}`);
                 }
 
@@ -431,25 +351,18 @@ export default function MapScreen(): React.JSX.Element {
         }
       );
 
-      // Cleanup subscription when component unmounts
       return () => {
         locationSubscription.then(sub => sub.remove());
       };
     })();
   }, [statesLoaded, insideStates]); // Add dependencies
 
-  // 🔥 ACTIVE DATA REFRESH: Update court data every 10 seconds for real-time UI updates
   useEffect(() => {
     const refreshCourtData = async () => {
       if (userLocation) {
-        const timestamp = new Date().toLocaleTimeString();
-        console.log(`🔄 Refreshing court data at ${timestamp} for real-time UI updates...`);
-        
-        setIsRefreshing(true);
+        const timestamp = new Date().toLocaleTimeString();setIsRefreshing(true);
         try {
-          await fetchNearbyCourts(userLocation.latitude, userLocation.longitude);
-          console.log(`✅ Court data refreshed successfully at ${timestamp}`);
-        } catch (error) {
+          await fetchNearbyCourts(userLocation.latitude, userLocation.longitude);} catch (error) {
           console.error('Error refreshing court data:', error);
         } finally {
           setIsRefreshing(false);
@@ -457,29 +370,22 @@ export default function MapScreen(): React.JSX.Element {
       }
     };
 
-    // Set up interval to refresh court data every 10 seconds
     const refreshInterval = setInterval(refreshCourtData, 10000);
 
-    // Cleanup interval when component unmounts
     return () => {
-      clearInterval(refreshInterval);
-      console.log('🛑 Court data refresh interval cleared');
-    };
+      clearInterval(refreshInterval);};
   }, [userLocation]); // Re-setup interval when user location changes
 
   const fetchNearbyCourts = async (lat: number, lng: number) => {
-    try {
-      console.log('🔄 Fetching courts from Firebase for UI update...');
-      const courtsCollection = collection(db, 'basketballCourts');
+    try {const courtsCollection = collection(db, 'basketballCourts');
       const courtSnapshot = await getDocs(courtsCollection);
-      
+
       const courtsList = courtSnapshot.docs.map(doc => {
         const data = doc.data();
-        
-        // Handle different possible location formats
+
         let latitude = 0;
         let longitude = 0;
-        
+
         if (data.location) {
           if (data.location.latitude && data.location.longitude) {
             latitude = data.location.latitude;
@@ -489,13 +395,11 @@ export default function MapScreen(): React.JSX.Element {
             longitude = data.location._long;
           }
         }
-        
-        // Determine if the court is currently open based on opening hours
+
         const currentlyOpen = isCourtCurrentlyOpen(data.openingHours);
-        
-        // Get fresh people count from database
+
         const peopleCount = data.peopleNumber || 0;
-        
+
         return {
           place_id: doc.id,
           name: data.name || 'Unknown Court',
@@ -511,25 +415,15 @@ export default function MapScreen(): React.JSX.Element {
         };
       });
 
-      // Filter courts within a reasonable distance (optional)
       const nearbyCourtsList = courtsList.filter(court => {
         if (court.latitude === 0 && court.longitude === 0) return false;
         const distance = calculateDistanceKm(lat, lng, court.latitude, court.longitude);
         return distance <= 200; // Only show courts within 200km radius
       });
 
-      // Log people count changes for debugging
-      nearbyCourtsList.slice(0, 5).forEach(court => {
-        console.log(`👥 ${court.name}: ${court.peopleNumber} people currently`);
-      });
+      nearbyCourtsList.slice(0, 5).forEach(court => {});
 
-      setCourts(nearbyCourtsList);
-      console.log(`✅ UI Updated: ${nearbyCourtsList.length} courts loaded with fresh people counts`);
-      
-      // Log total people across all courts for monitoring
-      const totalPeople = nearbyCourtsList.reduce((sum, court) => sum + (court.peopleNumber || 0), 0);
-      console.log(`📊 Total people across all courts: ${totalPeople}`);
-    } catch (err) {
+      setCourts(nearbyCourtsList);const totalPeople = nearbyCourtsList.reduce((sum, court) => sum + (court.peopleNumber || 0), 0);} catch (err) {
       console.error('Error fetching courts from Firebase:', err);
       Alert.alert('Error', 'Failed to load basketball courts from database.');
     }
@@ -540,20 +434,12 @@ export default function MapScreen(): React.JSX.Element {
    * Used for dynamic geofencing every 5 seconds
    */
   const getNearbyBasketballCourtsFromLocation = async (lat: number, lng: number): Promise<BasketballCourt[]> => {
-    try {
-      console.log(`🔄 Fetching courts for dynamic geofencing: ${lat}, ${lng}`);
-      
-      // Convert location to 6-character geohash
-      const fullGeohash = geohash.encode(lat, lng, 10);
-      const userGeohash = fullGeohash.substring(0, 6);
-      console.log(`User geohash (6 chars): ${userGeohash}`);
+    try {const fullGeohash = geohash.encode(lat, lng, 10);
+      const userGeohash = fullGeohash.substring(0, 6);const courtsRef = collection(db, 'basketballCourts');
 
-      // Query Firestore for courts with matching geohash prefix
-      const courtsRef = collection(db, 'basketballCourts');
-      
       const startRange = userGeohash;
       const endRange = userGeohash + '\uf8ff';
-      
+
       const geohashQuery = query(
         courtsRef,
         where('geohash', '>=', startRange),
@@ -564,13 +450,13 @@ export default function MapScreen(): React.JSX.Element {
 
       const snapshot = await getDocs(geohashQuery);
       const basketballCourts: BasketballCourt[] = [];
-      
+
       snapshot.forEach((doc) => {
         const data = doc.data() as any;
-        
+
         let courtLatitude = 0;
         let courtLongitude = 0;
-        
+
         if (data.location) {
           if (data.location.latitude && data.location.longitude) {
             courtLatitude = data.location.latitude;
@@ -583,7 +469,7 @@ export default function MapScreen(): React.JSX.Element {
           courtLatitude = data.latitude;
           courtLongitude = data.longitude;
         }
-        
+
         if (courtLatitude !== 0 && courtLongitude !== 0) {
           const court: BasketballCourt = {
             id: data.name || doc.id,
@@ -596,25 +482,17 @@ export default function MapScreen(): React.JSX.Element {
         }
       });
 
-      // Fallback if no courts found
-      if (basketballCourts.length === 0) {
-        console.log('No courts in geohash, using radius fallback...');
-        return await getFallbackCourts(lat, lng, 2); // Small radius for frequent queries
+      if (basketballCourts.length === 0) {return await getFallbackCourts(lat, lng, 2); // Small radius for frequent queries
       }
 
-      // Sort by distance
       basketballCourts.sort((a, b) => {
         const distA = calculateDistanceKm(lat, lng, a.latitude, a.longitude);
         const distB = calculateDistanceKm(lat, lng, b.latitude, b.longitude);
         return distA - distB;
       });
 
-      // Update state
-      setNearbyCourts(basketballCourts);
-      
-      console.log(`✅ Dynamic geofencing: Found ${basketballCourts.length} nearby courts`);
-      return basketballCourts;
-      
+      setNearbyCourts(basketballCourts);return basketballCourts;
+
     } catch (error) {
       console.error('Error in dynamic court fetching:', error);
       return nearbyCourts; // Return existing state as fallback
@@ -625,22 +503,18 @@ export default function MapScreen(): React.JSX.Element {
    * Fallback function to query courts by radius when geohash returns no results
    */
   const getFallbackCourts = async (userLat: number, userLng: number, radiusKm: number = 5): Promise<BasketballCourt[]> => {
-    try {
-      console.log(`Fallback: Querying courts within ${radiusKm}km radius`);
-      
-      const courtsRef = collection(db, 'basketballCourts');
+    try {const courtsRef = collection(db, 'basketballCourts');
       const allCourtsQuery = query(courtsRef, limit(100)); // Get more courts for radius filtering
-      
+
       const snapshot = await getDocs(allCourtsQuery);
       const nearbyCourtsArray: BasketballCourt[] = [];
-      
+
       snapshot.forEach((doc) => {
         const data = doc.data() as any; // Type assertion for Firestore data
-        
-        // Handle different location formats
+
         let courtLatitude = 0;
         let courtLongitude = 0;
-        
+
         if (data.location) {
           if (data.location.latitude && data.location.longitude) {
             courtLatitude = data.location.latitude;
@@ -653,11 +527,10 @@ export default function MapScreen(): React.JSX.Element {
           courtLatitude = data.latitude;
           courtLongitude = data.longitude;
         }
-        
-        // Calculate distance and filter by radius
+
         if (courtLatitude !== 0 && courtLongitude !== 0) {
           const distance = calculateDistanceKm(userLat, userLng, courtLatitude, courtLongitude);
-          
+
           if (distance <= radiusKm) {
             const court: BasketballCourt = {
               id: data.name || doc.id,
@@ -666,33 +539,26 @@ export default function MapScreen(): React.JSX.Element {
               radius: data.radius || 100,
               docId: doc.id,
             };
-            
+
             nearbyCourtsArray.push(court);
           }
         }
       });
-      
-      // Sort by distance
+
       nearbyCourtsArray.sort((a, b) => {
         const distA = calculateDistanceKm(userLat, userLng, a.latitude, a.longitude);
         const distB = calculateDistanceKm(userLat, userLng, b.latitude, b.longitude);
         return distA - distB;
-      });
-      
-      console.log(`Found ${nearbyCourtsArray.length} courts within radius fallback`);
-      
-      // Update the nearby courts state
-      setNearbyCourts(nearbyCourtsArray);
-      
+      });setNearbyCourts(nearbyCourtsArray);
+
       return nearbyCourtsArray;
-      
+
     } catch (error) {
       console.error('Error in radius fallback query:', error);
       return [];
     }
   };
 
-  // Function to navigate to court info page
   const navigateToCourtInfo = (court: Court) => {
     router.push({
       pathname: '/courts/court-info' as any,
@@ -710,9 +576,8 @@ export default function MapScreen(): React.JSX.Element {
     );
   }
 
-  // Sort courts by distance from user
   const sortedCourts = courts.sort((a, b) => {
-    if (!userLocation) return 0; 
+    if (!userLocation) return 0;
     const distA = calculateDistanceKm(userLocation.latitude, userLocation.longitude, a.latitude, a.longitude);
     const distB = calculateDistanceKm(userLocation.latitude, userLocation.longitude, b.latitude, b.longitude);
     return distA - distB;
@@ -720,7 +585,7 @@ export default function MapScreen(): React.JSX.Element {
 
   return (
     <View style={styles.container}>
-      <TouchableOpacity 
+      <TouchableOpacity
         style={styles.search}
         onPress={() => router.push('/courts/search')}
         activeOpacity={0.7}
@@ -736,7 +601,7 @@ export default function MapScreen(): React.JSX.Element {
           )}
         </View>
       </TouchableOpacity>
-      
+
       <MapView
         ref={mapRef}
         provider={PROVIDER_GOOGLE}
@@ -777,7 +642,7 @@ export default function MapScreen(): React.JSX.Element {
         keyExtractor={(item) => item.place_id}
         style={styles.list}
         renderItem={({ item }) => (
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.card}
             onPress={() => navigateToCourtInfo(item)}
             activeOpacity={0.7}
@@ -815,7 +680,7 @@ export default function MapScreen(): React.JSX.Element {
                 📍 {calculateDistanceKm(userLocation.latitude, userLocation.longitude, item.latitude, item.longitude).toFixed(2)} km away
               </Text>
             )}
-            
+
             {/* Add a visual indicator that the item is tappable */}
             <View style={styles.navigationHint}>
               <Ionicons name="chevron-forward" size={16} color="#007BFF" />
@@ -827,7 +692,6 @@ export default function MapScreen(): React.JSX.Element {
     </View>
   );
 }
-
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
