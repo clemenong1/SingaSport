@@ -266,14 +266,19 @@ export default function MapScreen(): React.JSX.Element {
                 court.radius
               );
 
-              const wasInside = insideStates[court.id] || false;
+              // Get the current state from AsyncStorage to avoid stale closure
+              const savedStates = await AsyncStorage.getItem('geofenceStates');
+              const currentStates = savedStates ? JSON.parse(savedStates) : {};
+              const wasInside = currentStates[court.id] || false;
 
               if (isInside && !wasInside) {
 
-                const newStates = { ...insideStates, [court.id]: true };
+                const newStates = { ...currentStates, [court.id]: true };
                 setInsideStates(newStates);
                 await saveGeofenceStates(newStates);const incrementSuccess = await incrementPeopleCountOptimized(court.id, court.docId);
-                if (incrementSuccess) {} else {
+                if (incrementSuccess) {
+                  console.log(`✅ Incremented count for ${court.id}`);
+                } else {
                   console.error(`❌ Failed to update database for ${court.id}`);
                 }
 
@@ -287,10 +292,12 @@ export default function MapScreen(): React.JSX.Element {
 
               } else if (!isInside && wasInside) {
 
-                const newStates = { ...insideStates, [court.id]: false };
+                const newStates = { ...currentStates, [court.id]: false };
                 setInsideStates(newStates);
                 await saveGeofenceStates(newStates);const decrementSuccess = await decrementPeopleCountOptimized(court.id, court.docId);
-                if (decrementSuccess) {} else {
+                if (decrementSuccess) {
+                  console.log(`✅ Decremented count for ${court.id}`);
+                } else {
                   console.error(`❌ Failed to update database for ${court.id}`);
                 }
 
@@ -312,13 +319,18 @@ export default function MapScreen(): React.JSX.Element {
                 court.radius
               );
 
-              const wasInside = insideStates[court.id] || false;
+              // Get the current state from AsyncStorage to avoid stale closure
+              const savedStates = await AsyncStorage.getItem('geofenceStates');
+              const currentStates = savedStates ? JSON.parse(savedStates) : {};
+              const wasInside = currentStates[court.id] || false;
 
               if (isInside && !wasInside) {
-                const newStates = { ...insideStates, [court.id]: true };
+                const newStates = { ...currentStates, [court.id]: true };
                 setInsideStates(newStates);
                 await saveGeofenceStates(newStates);const incrementSuccess = await incrementPeopleCountOptimized(court.id);
-                if (incrementSuccess) {} else {
+                if (incrementSuccess) {
+                  console.log(`✅ Incremented count (fallback) for ${court.id}`);
+                } else {
                   console.error(`❌ Failed to update database (fallback) for ${court.id}`);
                 }
 
@@ -331,10 +343,12 @@ export default function MapScreen(): React.JSX.Element {
                 });
 
               } else if (!isInside && wasInside) {
-                const newStates = { ...insideStates, [court.id]: false };
+                const newStates = { ...currentStates, [court.id]: false };
                 setInsideStates(newStates);
                 await saveGeofenceStates(newStates);const decrementSuccess = await decrementPeopleCountOptimized(court.id);
-                if (decrementSuccess) {} else {
+                if (decrementSuccess) {
+                  console.log(`✅ Decremented count (fallback) for ${court.id}`);
+                } else {
                   console.error(`❌ Failed to update database (fallback) for ${court.id}`);
                 }
 
@@ -355,7 +369,7 @@ export default function MapScreen(): React.JSX.Element {
         locationSubscription.then(sub => sub.remove());
       };
     })();
-  }, [statesLoaded, insideStates]); // Add dependencies
+  }, [statesLoaded]); // REMOVED insideStates from dependencies to prevent multiple listeners!
 
   useEffect(() => {
     const refreshCourtData = async () => {
