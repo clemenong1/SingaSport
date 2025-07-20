@@ -21,6 +21,7 @@ import * as Location from 'expo-location';
 import { isCourtCurrentlyOpen } from '../../src/utils';
 import { db } from '../../src/services/FirebaseConfig';
 import { collection, query, orderBy, onSnapshot, Timestamp } from 'firebase/firestore';
+import { VerifyReportComponent } from '../../src/components';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
@@ -67,6 +68,7 @@ export default function CourtInfoScreen() {
   const [distance, setDistance] = useState<string>('');
   const [reports, setReports] = useState<Report[]>([]);
   const [loadingReports, setLoadingReports] = useState(false);
+  const [verifyingReportId, setVerifyingReportId] = useState<string | null>(null);
 
   useEffect(() => {
     initializeCourtInfo();
@@ -496,6 +498,31 @@ export default function CourtInfoScreen() {
                       </View>
                     )}
                   </View>
+
+                  {/* Verification Button */}
+                  <TouchableOpacity 
+                    style={styles.verifyButton}
+                    onPress={() => setVerifyingReportId(verifyingReportId === report.id ? null : report.id)}
+                  >
+                    <Ionicons 
+                      name={verifyingReportId === report.id ? "close-outline" : "camera-outline"} 
+                      size={18} 
+                      color="#007AFF" 
+                    />
+                    <Text style={styles.verifyButtonText}>
+                      {verifyingReportId === report.id ? "Cancel Verification" : "Verify This Report"}
+                    </Text>
+                  </TouchableOpacity>
+
+                  {/* Verification Component */}
+                  {verifyingReportId === report.id && court && (
+                    <View style={styles.verificationContainer}>
+                      <VerifyReportComponent 
+                        courtId={court.place_id}
+                        reportId={report.id}
+                      />
+                    </View>
+                  )}
                 </View>
               ))}
             </View>
@@ -905,5 +932,29 @@ const styles = StyleSheet.create({
     color: '#666',
     marginTop: 8,
     textAlign: 'center',
+  },
+  verifyButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#F0F8FF',
+    borderWidth: 1,
+    borderColor: '#007AFF',
+    borderRadius: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    marginTop: 12,
+  },
+  verifyButtonText: {
+    fontSize: 14,
+    color: '#007AFF',
+    fontWeight: '600',
+    marginLeft: 6,
+  },
+  verificationContainer: {
+    marginTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#E5E5E5',
+    paddingTop: 16,
   },
 });
