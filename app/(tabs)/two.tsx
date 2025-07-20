@@ -271,6 +271,11 @@ export default function ContributeTab() {
       setRsvpLoading(gameId);
       await gameService.toggleRSVP(gameId, auth.currentUser.uid, isJoining);
       
+      // Show success message with points for joining
+      if (isJoining) {
+        Alert.alert('Success', 'You have joined the game! +5 points earned!');
+      }
+      
       // Note: We don't manually update local state here because the real-time 
       // listener (subscribeToGameSchedules) will automatically update the state 
       // when Firebase changes. This prevents double-counting issues.

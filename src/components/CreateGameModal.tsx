@@ -16,6 +16,7 @@ import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { auth, db } from '../services/FirebaseConfig';
 import { gameService } from '../services/gameService';
+import { userService } from '../utils/userService';
 import { GameSchedule, BasketballCourtExtended } from '../types';
 import { collection, getDocs, query, orderBy } from 'firebase/firestore';
 
@@ -228,6 +229,15 @@ export default function CreateGameModal({
       const gameId = await gameService.createGameSchedule(gameData);
       console.log('🎮 Game created with ID:', gameId);
 
+      // Award points for creating a game
+      try {
+        await userService.awardPointsForGameCreation(auth.currentUser.uid);
+        console.log('🎮 Points awarded for game creation');
+      } catch (pointsError) {
+        console.error('🚨 Error awarding points for game creation:', pointsError);
+        // Don't fail the game creation if points awarding fails
+      }
+
       const createdGame: GameSchedule = {
         ...gameData,
         id: gameId,
@@ -238,7 +248,7 @@ export default function CreateGameModal({
       resetForm();
       onClose();
 
-      Alert.alert('Success', 'Game scheduled successfully!');
+      Alert.alert('Success', 'Game scheduled successfully! +10 points earned!');
     } catch (error: any) {
       console.error('🚨 Error creating game:', error);
       console.error('🚨 Full error object:', {

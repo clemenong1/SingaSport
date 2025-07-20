@@ -18,6 +18,7 @@ import {
   writeBatch
 } from 'firebase/firestore';
 import { db } from './FirebaseConfig';
+import { userService } from '../utils/userService';
 import { GameSchedule } from '../types';
 
 export class GameService {
@@ -32,7 +33,7 @@ export class GameService {
 
   async createGameSchedule(gameData: Omit<GameSchedule, 'id' | 'createdAt'>): Promise<string> {
     try {
-      console.log('🎮 Creating game with data:', {
+      console.log(' Creating game with data:', {
         ...gameData,
         scheduledTime: gameData.scheduledTime.toISOString()
       });
@@ -48,22 +49,22 @@ export class GameService {
         scheduledTime: Timestamp.fromDate(gameData.scheduledTime),
       };
 
-      console.log('🎮 Processed game data for Firestore (undefined values removed):', {
+      console.log('Processed game data for Firestore (undefined values removed):', {
         ...gameScheduleData,
         scheduledTime: gameScheduleData.scheduledTime.toDate().toISOString(),
         createdAt: 'serverTimestamp()'
       });
 
       const docRef = await addDoc(collection(db, 'gameSchedules'), gameScheduleData);
-      console.log('🎮 Game created successfully with ID:', docRef.id);
+      console.log('Game created successfully with ID:', docRef.id);
 
       await this.updateCourtGameSchedules(gameData.basketballCourt, docRef.id, 'add');
-      console.log('🎮 Updated court game schedules');
+      console.log('Updated court game schedules');
 
       return docRef.id;
     } catch (error) {
-      console.error('💥 Error creating game schedule:', error);
-      console.error('💥 Error details:', {
+      console.error('Error creating game schedule:', error);
+      console.error('Error details:', {
         message: error instanceof Error ? error.message : 'Unknown error',
         code: (error as any)?.code,
         stack: error instanceof Error ? error.stack : undefined
@@ -74,17 +75,17 @@ export class GameService {
 
   async getAllGameSchedules(): Promise<GameSchedule[]> {
     try {
-      console.log('🔍 Fetching ALL games from collection...');
+      console.log('Fetching ALL games from collection...');
       
       const gamesRef = collection(db, 'gameSchedules');
       const querySnapshot = await getDocs(gamesRef);
-      console.log('📊 Total documents in collection:', querySnapshot.size);
+      console.log('Total documents in collection:', querySnapshot.size);
       
       const games: GameSchedule[] = [];
 
       querySnapshot.forEach((doc) => {
         const data = doc.data();
-        console.log('📄 All games - Document data:', {
+        console.log('All games - Document data:', {
           id: doc.id,
           scheduledTime: data.scheduledTime,
           scheduledTimeType: typeof data.scheduledTime,
@@ -126,16 +127,16 @@ export class GameService {
           } as GameSchedule;
           
           games.push(game);
-          console.log('✅ Successfully parsed game:', game.id, 'scheduled for:', game.scheduledTime.toISOString());
+          console.log('Successfully parsed game:', game.id, 'scheduled for:', game.scheduledTime.toISOString());
         } catch (parseError) {
-          console.error('❌ Error parsing game document:', doc.id, parseError);
+          console.error('Error parsing game document:', doc.id, parseError);
         }
       });
 
-      console.log('🎯 Returning', games.length, 'total games');
+      console.log('Returning', games.length, 'total games');
       return games;
     } catch (error) {
-      console.error('💥 Error in getAllGameSchedules:', error);
+      console.error('Error in getAllGameSchedules:', error);
       throw new Error('Failed to fetch all games');
     }
   }
@@ -146,7 +147,7 @@ export class GameService {
       const allGames = await this.getAllGameSchedules();
       
       const now = new Date();
-      console.log('🔍 Filtering games after:', now.toISOString());
+      console.log('Filtering games after:', now.toISOString());
       
       // Filter games manually to see what's happening
       const upcomingGames = allGames.filter(game => {
@@ -155,31 +156,31 @@ export class GameService {
         return isUpcoming;
       });
       
-      console.log('🎯 Found', upcomingGames.length, 'upcoming games out of', allGames.length, 'total');
+      console.log('Found', upcomingGames.length, 'upcoming games out of', allGames.length, 'total');
       
       // Sort by scheduled time
       upcomingGames.sort((a, b) => a.scheduledTime.getTime() - b.scheduledTime.getTime());
       
       return upcomingGames;
     } catch (error) {
-      console.error('💥 Error in getUpcomingGameSchedules:', error);
+      console.error('Error in getUpcomingGameSchedules:', error);
       throw new Error('Failed to fetch upcoming games');
     }
   }
 
   subscribeToGameSchedules(callback: (games: GameSchedule[]) => void): () => void {
     try {
-      console.log('🔄 Setting up real-time subscription for all games...');
+      console.log('Setting up real-time subscription for all games...');
       
       const gamesRef = collection(db, 'gameSchedules');
       // Subscribe to all games, we'll filter on the client side
       const unsubscribe = onSnapshot(gamesRef, (querySnapshot) => {
-        console.log('🔄 Real-time update: received', querySnapshot.size, 'documents');
+        console.log('Real-time update: received', querySnapshot.size, 'documents');
         const allGames: GameSchedule[] = [];
 
         querySnapshot.forEach((doc) => {
           const data = doc.data();
-          console.log('🔄 Real-time document:', {
+          console.log('Real-time document:', {
             id: doc.id,
             scheduledTime: data.scheduledTime,
             scheduledTimeType: typeof data.scheduledTime,
@@ -219,7 +220,7 @@ export class GameService {
             
             allGames.push(game);
           } catch (parseError) {
-            console.error('❌ Error parsing real-time document:', doc.id, parseError);
+            console.error('Error parsing real-time document:', doc.id, parseError);
           }
         });
 
@@ -232,15 +233,15 @@ export class GameService {
         // Sort by scheduled time
         upcomingGames.sort((a, b) => a.scheduledTime.getTime() - b.scheduledTime.getTime());
 
-        console.log('🔄 Calling callback with', upcomingGames.length, 'upcoming games out of', allGames.length, 'total');
+        console.log('Calling callback with', upcomingGames.length, 'upcoming games out of', allGames.length, 'total');
         callback(upcomingGames);
       }, (error) => {
-        console.error('💥 Error in real-time listener:', error);
+        console.error('Error in real-time listener:', error);
       });
 
       return unsubscribe;
     } catch (error) {
-      console.error('💥 Error setting up real-time listener:', error);
+      console.error('Error setting up real-time listener:', error);
       throw new Error('Failed to set up real-time listener');
     }
   }
@@ -279,6 +280,18 @@ export class GameService {
           peopleAttending: increment(1),
           rsvpUsers: arrayUnion(userId)
         });
+
+        await batch.commit();
+
+        // Award points for joining a game (after successful batch commit)
+        try {
+          await userService.awardPointsForGameJoining(userId);
+          console.log('Points awarded for joining game');
+        } catch (pointsError) {
+          console.error('Error awarding points for joining game:', pointsError);
+          // Don't fail the RSVP if points awarding fails
+        }
+
       } else {
         if (!gameData.rsvpUsers.includes(userId)) {
           throw new Error('User has not RSVP\'d to this game');
@@ -288,9 +301,9 @@ export class GameService {
           peopleAttending: increment(-1),
           rsvpUsers: arrayRemove(userId)
         });
-      }
 
-      await batch.commit();
+        await batch.commit();
+      }
 
       return true;
     } catch (error) {
