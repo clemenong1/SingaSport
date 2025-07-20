@@ -38,6 +38,7 @@ interface Report {
   userName: string;
   reportedAt: any;
   imageCount: number;
+  photoUrls?: string[];
   status: 'open' | 'investigating' | 'resolved';
 }
 
@@ -60,6 +61,9 @@ export default function ReportsListScreen() {
   const [photoModalVisible, setPhotoModalVisible] = useState(false);
   const [selectedReportPhotos, setSelectedReportPhotos] = useState<Verification[]>([]);
   const [selectedPhotoIndex, setSelectedPhotoIndex] = useState(0);
+  const [reportPhotoModalVisible, setReportPhotoModalVisible] = useState(false);
+  const [selectedReportPhotoUrls, setSelectedReportPhotoUrls] = useState<string[]>([]);
+  const [selectedReportPhotoIndex, setSelectedReportPhotoIndex] = useState(0);
 
   useEffect(() => {
     initializeReports();
@@ -250,6 +254,18 @@ export default function ReportsListScreen() {
     setSelectedPhotoIndex(0);
   };
 
+  const openReportPhotoModal = (photoUrls: string[], startIndex: number = 0) => {
+    setSelectedReportPhotoUrls(photoUrls);
+    setSelectedReportPhotoIndex(startIndex);
+    setReportPhotoModalVisible(true);
+  };
+
+  const closeReportPhotoModal = () => {
+    setReportPhotoModalVisible(false);
+    setSelectedReportPhotoUrls([]);
+    setSelectedReportPhotoIndex(0);
+  };
+
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
@@ -349,6 +365,42 @@ export default function ReportsListScreen() {
 
                 {/* Report Description */}
                 <Text style={styles.reportDescription}>{report.description}</Text>
+
+                {/* Report Photos */}
+                {report.photoUrls && report.photoUrls.length > 0 && (
+                  <View style={styles.reportPhotosSection}>
+                    <View style={styles.reportPhotosHeader}>
+                      <Ionicons name="images-outline" size={16} color="#666" />
+                      <Text style={styles.reportPhotosTitle}>
+                        Report Photos ({report.photoUrls.length})
+                      </Text>
+                    </View>
+                    
+                    <ScrollView 
+                      horizontal 
+                      showsHorizontalScrollIndicator={false}
+                      style={styles.reportPhotos}
+                      contentContainerStyle={styles.reportPhotosContainer}
+                    >
+                      {report.photoUrls.map((photoUrl, photoIndex) => (
+                        <TouchableOpacity
+                          key={photoIndex}
+                          style={styles.reportPhotoContainer}
+                          onPress={() => openReportPhotoModal(report.photoUrls!, photoIndex)}
+                        >
+                          <Image 
+                            source={{ uri: photoUrl }} 
+                            style={styles.reportPhoto}
+                            resizeMode="cover"
+                          />
+                          <View style={styles.photoOverlay}>
+                            <Ionicons name="expand-outline" size={16} color="white" />
+                          </View>
+                        </TouchableOpacity>
+                      ))}
+                    </ScrollView>
+                  </View>
+                )}
 
                 {/* Report Details */}
                 <View style={styles.reportDetails}>
@@ -500,6 +552,53 @@ export default function ReportsListScreen() {
           />
         </View>
       </Modal>
+
+      {/* Report Photo Modal */}
+      <Modal
+        visible={reportPhotoModalVisible}
+        transparent={true}
+        statusBarTranslucent={true}
+        animationType="fade"
+        onRequestClose={closeReportPhotoModal}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalHeader}>
+            <TouchableOpacity onPress={closeReportPhotoModal} style={styles.modalCloseButton}>
+              <Ionicons name="close" size={28} color="white" />
+            </TouchableOpacity>
+            <Text style={styles.modalTitle}>
+              {selectedReportPhotoIndex + 1} of {selectedReportPhotoUrls.length}
+            </Text>
+          </View>
+          
+          <FlatList
+            data={selectedReportPhotoUrls}
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            initialScrollIndex={selectedReportPhotoIndex}
+            getItemLayout={(data, index) => ({
+              length: screenWidth,
+              offset: screenWidth * index,
+              index,
+            })}
+            onMomentumScrollEnd={(event) => {
+              const index = Math.round(event.nativeEvent.contentOffset.x / screenWidth);
+              setSelectedReportPhotoIndex(index);
+            }}
+            keyExtractor={(item, index) => `report-photo-${index}`}
+            renderItem={({ item }) => (
+              <View style={styles.modalPhotoContainer}>
+                <Image 
+                  source={{ uri: item }} 
+                  style={styles.modalPhoto}
+                  resizeMode="contain"
+                />
+              </View>
+            )}
+          />
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -639,6 +738,37 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     marginBottom: 12,
   },
+  reportPhotosSection: {
+    marginTop: 12,
+    marginBottom: 12,
+  },
+  reportPhotosHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  reportPhotosTitle: {
+    fontSize: 12,
+    color: '#666',
+    fontWeight: '600',
+    marginLeft: 6,
+  },
+  reportPhotos: {
+    marginTop: 4,
+  },
+  reportPhotosContainer: {
+    paddingRight: 16,
+  },
+  reportPhotoContainer: {
+    marginRight: 8,
+    position: 'relative',
+  },
+  reportPhoto: {
+    width: 60,
+    height: 60,
+    borderRadius: 8,
+    backgroundColor: '#f0f0f0',
+  },
   reportDetails: {
     marginBottom: 12,
   },
@@ -757,11 +887,14 @@ const styles = StyleSheet.create({
   },
   photoOverlay: {
     position: 'absolute',
-    top: 4,
-    right: 4,
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    borderRadius: 12,
-    padding: 2,
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   // Modal Styles
   modalContainer: {
