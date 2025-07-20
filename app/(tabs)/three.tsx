@@ -179,15 +179,27 @@ export default function ProfileScreen() {
           <View style={styles.pointsBreakdown}>
             <View style={styles.pointsItem}>
               <View style={styles.pointsIconContainer}>
-                <Ionicons name="flag" size={16} color="#FF6B6B" />
+                <Ionicons name="people" size={16} color="#FF6B6B" />
               </View>
-              <Text style={styles.pointsItemText}>Report Issue: +10 points</Text>
+              <Text style={styles.pointsItemText}>Join Game: +5 points</Text>
             </View>
             <View style={styles.pointsItem}>
               <View style={styles.pointsIconContainer}>
-                <Ionicons name="camera" size={16} color="#4CAF50" />
+                <Ionicons name="add-circle" size={16} color="#4CAF50" />
               </View>
-              <Text style={styles.pointsItemText}>Verify Report: +10 points</Text>
+              <Text style={styles.pointsItemText}>Create Game: +10 points</Text>
+            </View>
+            <View style={styles.pointsItem}>
+              <View style={styles.pointsIconContainer}>
+                <Ionicons name="checkmark-circle" size={16} color="#4CAF50" />
+              </View>
+              <Text style={styles.pointsItemText}>Verify Report: +15 points</Text>
+            </View>
+            <View style={styles.pointsItem}>
+              <View style={styles.pointsIconContainer}>
+                <Ionicons name="warning" size={16} color="#FF9800" />
+              </View>
+              <Text style={styles.pointsItemText}>Report Issue: +20 points</Text>
             </View>
           </View>
         </View>
