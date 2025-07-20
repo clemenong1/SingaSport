@@ -32,81 +32,215 @@ export class GameService {
 
   async createGameSchedule(gameData: Omit<GameSchedule, 'id' | 'createdAt'>): Promise<string> {
     try {
-      const gameScheduleData = {
+      console.log('🎮 Creating game with data:', {
         ...gameData,
+        scheduledTime: gameData.scheduledTime.toISOString()
+      });
+
+      // Remove undefined values to prevent Firestore errors
+      const cleanedGameData = Object.fromEntries(
+        Object.entries(gameData).filter(([_, value]) => value !== undefined)
+      );
+
+      const gameScheduleData = {
+        ...cleanedGameData,
         createdAt: serverTimestamp(),
         scheduledTime: Timestamp.fromDate(gameData.scheduledTime),
       };
 
+      console.log('🎮 Processed game data for Firestore (undefined values removed):', {
+        ...gameScheduleData,
+        scheduledTime: gameScheduleData.scheduledTime.toDate().toISOString(),
+        createdAt: 'serverTimestamp()'
+      });
+
       const docRef = await addDoc(collection(db, 'gameSchedules'), gameScheduleData);
+      console.log('🎮 Game created successfully with ID:', docRef.id);
 
       await this.updateCourtGameSchedules(gameData.basketballCourt, docRef.id, 'add');
+      console.log('🎮 Updated court game schedules');
 
       return docRef.id;
     } catch (error) {
-      throw new Error('Failed to create game schedule');
+      console.error('💥 Error creating game schedule:', error);
+      console.error('💥 Error details:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        code: (error as any)?.code,
+        stack: error instanceof Error ? error.stack : undefined
+      });
+      throw new Error(`Failed to create game schedule: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  async getAllGameSchedules(): Promise<GameSchedule[]> {
+    try {
+      console.log('🔍 Fetching ALL games from collection...');
+      
+      const gamesRef = collection(db, 'gameSchedules');
+      const querySnapshot = await getDocs(gamesRef);
+      console.log('📊 Total documents in collection:', querySnapshot.size);
+      
+      const games: GameSchedule[] = [];
+
+      querySnapshot.forEach((doc) => {
+        const data = doc.data();
+        console.log('📄 All games - Document data:', {
+          id: doc.id,
+          scheduledTime: data.scheduledTime,
+          scheduledTimeType: typeof data.scheduledTime,
+          courtName: data.courtName,
+          address: data.address,
+          maxPlayers: data.maxPlayers,
+          allFields: Object.keys(data)
+        });
+        
+        try {
+          let scheduledTime: Date;
+          if (data.scheduledTime && typeof data.scheduledTime.toDate === 'function') {
+            scheduledTime = data.scheduledTime.toDate();
+          } else if (data.scheduledTime instanceof Date) {
+            scheduledTime = data.scheduledTime;
+          } else if (typeof data.scheduledTime === 'string') {
+            scheduledTime = new Date(data.scheduledTime);
+          } else {
+            console.warn('Unknown scheduledTime format:', data.scheduledTime);
+            scheduledTime = new Date();
+          }
+          
+          const game = {
+            id: doc.id,
+            basketballCourt: data.basketballCourt || '',
+            courtName: data.courtName || 'Unknown Court',
+            address: data.address || 'Unknown Address',
+            scheduledTime: scheduledTime,
+            peopleAttending: data.peopleAttending || 0,
+            createdBy: data.createdBy || '',
+            createdAt: data.createdAt ? 
+              (typeof data.createdAt.toDate === 'function' ? data.createdAt.toDate() : new Date(data.createdAt)) 
+              : new Date(),
+            rsvpUsers: data.rsvpUsers || [],
+            maxPlayers: data.maxPlayers,
+            gameType: data.gameType,
+            skillLevel: data.skillLevel,
+            description: data.description,
+          } as GameSchedule;
+          
+          games.push(game);
+          console.log('✅ Successfully parsed game:', game.id, 'scheduled for:', game.scheduledTime.toISOString());
+        } catch (parseError) {
+          console.error('❌ Error parsing game document:', doc.id, parseError);
+        }
+      });
+
+      console.log('🎯 Returning', games.length, 'total games');
+      return games;
+    } catch (error) {
+      console.error('💥 Error in getAllGameSchedules:', error);
+      throw new Error('Failed to fetch all games');
     }
   }
 
   async getUpcomingGameSchedules(): Promise<GameSchedule[]> {
     try {
+      // First try to get all games to debug
+      const allGames = await this.getAllGameSchedules();
+      
       const now = new Date();
-      const gamesRef = collection(db, 'gameSchedules');
-      const q = query(
-        gamesRef,
-        where('scheduledTime', '>=', Timestamp.fromDate(now)),
-        orderBy('scheduledTime', 'asc')
-      );
-
-      const querySnapshot = await getDocs(q);
-      const games: GameSchedule[] = [];
-
-      querySnapshot.forEach((doc) => {
-        const data = doc.data();
-        games.push({
-          id: doc.id,
-          ...data,
-          scheduledTime: data.scheduledTime.toDate(),
-          createdAt: data.createdAt ? data.createdAt.toDate() : new Date(),
-        } as GameSchedule);
+      console.log('🔍 Filtering games after:', now.toISOString());
+      
+      // Filter games manually to see what's happening
+      const upcomingGames = allGames.filter(game => {
+        const isUpcoming = game.scheduledTime > now;
+        console.log(`Game ${game.id}: ${game.scheduledTime.toISOString()} > ${now.toISOString()} = ${isUpcoming}`);
+        return isUpcoming;
       });
-
-      return games;
+      
+      console.log('🎯 Found', upcomingGames.length, 'upcoming games out of', allGames.length, 'total');
+      
+      // Sort by scheduled time
+      upcomingGames.sort((a, b) => a.scheduledTime.getTime() - b.scheduledTime.getTime());
+      
+      return upcomingGames;
     } catch (error) {
+      console.error('💥 Error in getUpcomingGameSchedules:', error);
       throw new Error('Failed to fetch upcoming games');
     }
   }
 
   subscribeToGameSchedules(callback: (games: GameSchedule[]) => void): () => void {
     try {
-      const now = new Date();
+      console.log('🔄 Setting up real-time subscription for all games...');
+      
       const gamesRef = collection(db, 'gameSchedules');
-      const q = query(
-        gamesRef,
-        where('scheduledTime', '>=', Timestamp.fromDate(now)),
-        orderBy('scheduledTime', 'asc')
-      );
-
-      const unsubscribe = onSnapshot(q, (querySnapshot) => {
-        const games: GameSchedule[] = [];
+      // Subscribe to all games, we'll filter on the client side
+      const unsubscribe = onSnapshot(gamesRef, (querySnapshot) => {
+        console.log('🔄 Real-time update: received', querySnapshot.size, 'documents');
+        const allGames: GameSchedule[] = [];
 
         querySnapshot.forEach((doc) => {
           const data = doc.data();
-          games.push({
+          console.log('🔄 Real-time document:', {
             id: doc.id,
-            ...data,
-            scheduledTime: data.scheduledTime.toDate(),
-            createdAt: data.createdAt ? data.createdAt.toDate() : new Date(),
-          } as GameSchedule);
+            scheduledTime: data.scheduledTime,
+            scheduledTimeType: typeof data.scheduledTime,
+            courtName: data.courtName
+          });
+          
+          try {
+            let scheduledTime: Date;
+            if (data.scheduledTime && typeof data.scheduledTime.toDate === 'function') {
+              scheduledTime = data.scheduledTime.toDate();
+            } else if (data.scheduledTime instanceof Date) {
+              scheduledTime = data.scheduledTime;
+            } else if (typeof data.scheduledTime === 'string') {
+              scheduledTime = new Date(data.scheduledTime);
+            } else {
+              console.warn('Unknown scheduledTime format in real-time:', data.scheduledTime);
+              scheduledTime = new Date();
+            }
+            
+            const game = {
+              id: doc.id,
+              basketballCourt: data.basketballCourt || '',
+              courtName: data.courtName || 'Unknown Court',
+              address: data.address || 'Unknown Address',
+              scheduledTime: scheduledTime,
+              peopleAttending: data.peopleAttending || 0,
+              createdBy: data.createdBy || '',
+              createdAt: data.createdAt ? 
+                (typeof data.createdAt.toDate === 'function' ? data.createdAt.toDate() : new Date(data.createdAt)) 
+                : new Date(),
+              rsvpUsers: data.rsvpUsers || [],
+              maxPlayers: data.maxPlayers,
+              gameType: data.gameType,
+              skillLevel: data.skillLevel,
+              description: data.description,
+            } as GameSchedule;
+            
+            allGames.push(game);
+          } catch (parseError) {
+            console.error('❌ Error parsing real-time document:', doc.id, parseError);
+          }
         });
 
-        callback(games);
+        // Filter for upcoming games
+        const now = new Date();
+        const upcomingGames = allGames.filter(game => {
+          return game.scheduledTime > now;
+        });
+        
+        // Sort by scheduled time
+        upcomingGames.sort((a, b) => a.scheduledTime.getTime() - b.scheduledTime.getTime());
+
+        console.log('🔄 Calling callback with', upcomingGames.length, 'upcoming games out of', allGames.length, 'total');
+        callback(upcomingGames);
       }, (error) => {
-        console.error('Error in real-time listener:', error);
+        console.error('💥 Error in real-time listener:', error);
       });
 
       return unsubscribe;
     } catch (error) {
+      console.error('💥 Error setting up real-time listener:', error);
       throw new Error('Failed to set up real-time listener');
     }
   }
