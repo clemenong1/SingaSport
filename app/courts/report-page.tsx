@@ -137,7 +137,7 @@ export default function ReportPageScreen() {
           (snapshot) => {
             // Progress monitoring (optional)
             const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-            console.log('Upload progress:', progress);
+            
           },
           (error) => {
             console.error('Upload error:', error);

@@ -266,8 +266,10 @@ SingaSport/
 The app includes a points-based gamification system to encourage user engagement and community contributions:
 
 #### Points Earning
-- **Report Submission**: +10 points for submitting a court issue report
-- **Report Verification**: +10 points for uploading verification photos
+- **Game Creation**: +10 points for creating a new basketball game
+- **Game Joining**: +5 points for joining a basketball game
+- **Report Submission**: +20 points for submitting a court issue report
+- **Report Verification**: +15 points for uploading verification photos
 
 #### Points Display
 - Points are prominently displayed in the user profile

@@ -277,7 +277,7 @@ export default function MapScreen(): React.JSX.Element {
                 setInsideStates(newStates);
                 await saveGeofenceStates(newStates);const incrementSuccess = await incrementPeopleCountOptimized(court.id, court.docId);
                 if (incrementSuccess) {
-                  console.log(`✅ Incremented count for ${court.id}`);
+                  
                 } else {
                   console.error(`❌ Failed to update database for ${court.id}`);
                 }
@@ -296,7 +296,7 @@ export default function MapScreen(): React.JSX.Element {
                 setInsideStates(newStates);
                 await saveGeofenceStates(newStates);const decrementSuccess = await decrementPeopleCountOptimized(court.id, court.docId);
                 if (decrementSuccess) {
-                  console.log(`✅ Decremented count for ${court.id}`);
+                  
                 } else {
                   console.error(`❌ Failed to update database for ${court.id}`);
                 }
@@ -329,7 +329,7 @@ export default function MapScreen(): React.JSX.Element {
                 setInsideStates(newStates);
                 await saveGeofenceStates(newStates);const incrementSuccess = await incrementPeopleCountOptimized(court.id);
                 if (incrementSuccess) {
-                  console.log(`✅ Incremented count (fallback) for ${court.id}`);
+                  
                 } else {
                   console.error(`❌ Failed to update database (fallback) for ${court.id}`);
                 }
@@ -347,7 +347,7 @@ export default function MapScreen(): React.JSX.Element {
                 setInsideStates(newStates);
                 await saveGeofenceStates(newStates);const decrementSuccess = await decrementPeopleCountOptimized(court.id);
                 if (decrementSuccess) {
-                  console.log(`✅ Decremented count (fallback) for ${court.id}`);
+                  
                 } else {
                   console.error(`❌ Failed to update database (fallback) for ${court.id}`);
                 }

@@ -6,7 +6,7 @@ export interface UserProfile {
   username: string;
   email: string;
   country: string;
-  phoneNumber?: string;
+  phoneNumber?: string | null;
   profileImageUrl?: string;
   points: number;
   createdAt: string;
@@ -91,11 +91,23 @@ export const userService = {
   },
 
   async awardPointsForReport(uid: string) {
-    return this.awardPoints(uid, 10);
+    return this.awardPoints(uid, 20);
   },
 
   async awardPointsForVerification(uid: string) {
+    return this.awardPoints(uid, 15);
+  },
+
+  async awardPointsForGameCreation(uid: string) {
     return this.awardPoints(uid, 10);
+  },
+
+  async awardPointsForGameJoining(uid: string) {
+    return this.awardPoints(uid, 5);
+  },
+
+  async deductPointsForGameLeaving(uid: string) {
+    return this.awardPoints(uid, -5);
   },
 
   async migrateUserPoints(uid: string) {

@@ -79,12 +79,22 @@ export default function EditProfileScreen() {
     setSaving(true);
     try {
       if (auth.currentUser) {
-        await userService.updateUserProfile(auth.currentUser.uid, {
+        // Prepare update data, handling empty phone number properly
+        const updateData: any = {
           username: formData.username,
           email: formData.email,
           country: formData.country,
-          phoneNumber: formData.phoneNumber || undefined
-        });
+        };
+
+        // Only include phoneNumber if it's not empty
+        if (formData.phoneNumber && formData.phoneNumber.trim()) {
+          updateData.phoneNumber = formData.phoneNumber.trim();
+        } else {
+          // Set to null for empty phone numbers (Firestore allows null)
+          updateData.phoneNumber = null;
+        }
+
+        await userService.updateUserProfile(auth.currentUser.uid, updateData);
 
         Alert.alert('Success', 'Profile updated successfully!', [
           { text: 'OK', onPress: () => router.back() }
