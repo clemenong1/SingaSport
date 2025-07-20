@@ -270,23 +270,11 @@ export default function ContributeTab() {
     try {
       setRsvpLoading(gameId);
       await gameService.toggleRSVP(gameId, auth.currentUser.uid, isJoining);
-
-      setGames((prevGames) =>
-        prevGames.map((game) => {
-          if (game.id === gameId) {
-            const updatedRsvpUsers = isJoining
-              ? [...(game.rsvpUsers || []), auth.currentUser!.uid]
-              : (game.rsvpUsers || []).filter((uid) => uid !== auth.currentUser!.uid);
-
-            return {
-              ...game,
-              peopleAttending: game.peopleAttending + (isJoining ? 1 : -1),
-              rsvpUsers: updatedRsvpUsers,
-            };
-          }
-          return game;
-        })
-      );
+      
+      // Note: We don't manually update local state here because the real-time 
+      // listener (subscribeToGameSchedules) will automatically update the state 
+      // when Firebase changes. This prevents double-counting issues.
+      
     } catch (error: any) {
       console.error('Error updating RSVP:', error);
       Alert.alert('Error', error.message || 'Failed to update RSVP');
