@@ -22,7 +22,16 @@ export default function ProfileScreen() {
     try {
       if (auth.currentUser) {
         const profile = await userService.getUserProfile(auth.currentUser.uid);
-        setUserProfile(profile);
+        
+        // Migrate points for existing users
+        if (profile && profile.points === undefined) {
+          await userService.migrateUserPoints(auth.currentUser.uid);
+          // Reload the profile after migration
+          const updatedProfile = await userService.getUserProfile(auth.currentUser.uid);
+          setUserProfile(updatedProfile);
+        } else {
+          setUserProfile(profile);
+        }
 
         if (profile?.profileImageUrl) {
           setProfileImage(profile.profileImageUrl);
@@ -149,6 +158,37 @@ export default function ProfileScreen() {
           <View style={styles.infoItem}>
             <Text style={styles.infoLabel}>Phone Number</Text>
             <Text style={styles.infoValue}>{userProfile?.phoneNumber || 'Not set'}</Text>
+          </View>
+        </View>
+      </View>
+
+      {/* Points Section */}
+      <View style={styles.infoSection}>
+        <Text style={styles.sectionTitle}>Gamification</Text>
+        <View style={styles.pointsCard}>
+          <View style={styles.pointsHeader}>
+            <View style={styles.trophyContainer}>
+              <Ionicons name="trophy" size={28} color="#FFD700" />
+            </View>
+            <Text style={styles.pointsTitle}>Your Points</Text>
+          </View>
+          <Text style={styles.pointsValue}>{userProfile?.points || 0}</Text>
+          <Text style={styles.pointsSubtext}>
+            Keep contributing to the community and earn more points!
+          </Text>
+          <View style={styles.pointsBreakdown}>
+            <View style={styles.pointsItem}>
+              <View style={styles.pointsIconContainer}>
+                <Ionicons name="flag" size={16} color="#FF6B6B" />
+              </View>
+              <Text style={styles.pointsItemText}>Report Issue: +10 points</Text>
+            </View>
+            <View style={styles.pointsItem}>
+              <View style={styles.pointsIconContainer}>
+                <Ionicons name="camera" size={16} color="#4CAF50" />
+              </View>
+              <Text style={styles.pointsItemText}>Verify Report: +10 points</Text>
+            </View>
           </View>
         </View>
       </View>
@@ -311,5 +351,84 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     marginLeft: 8,
+  },
+  pointsCard: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 5,
+    borderWidth: 1,
+    borderColor: '#f0f0f0',
+  },
+  pointsHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  pointsTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#333',
+    marginLeft: 8,
+  },
+  pointsValue: {
+    fontSize: 48,
+    fontWeight: 'bold',
+    color: '#FFD700',
+    textAlign: 'center',
+    marginBottom: 12,
+    textShadowColor: 'rgba(0, 0, 0, 0.1)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 4,
+  },
+  pointsSubtext: {
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
+    marginBottom: 20,
+    lineHeight: 20,
+  },
+  pointsBreakdown: {
+    flexDirection: 'column',
+    gap: 12,
+  },
+  pointsItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    backgroundColor: '#f8f9fa',
+    borderRadius: 10,
+  },
+  pointsItemText: {
+    fontSize: 14,
+    color: '#333',
+    marginLeft: 10,
+    fontWeight: '500',
+  },
+  trophyContainer: {
+    backgroundColor: 'rgba(255, 215, 0, 0.1)',
+    borderRadius: 15,
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 215, 0, 0.3)',
+  },
+  pointsIconContainer: {
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    width: 30,
+    height: 30,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
   },
 });
