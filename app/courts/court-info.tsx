@@ -21,7 +21,6 @@ import * as Location from 'expo-location';
 import { isCourtCurrentlyOpen } from '../../src/utils';
 import { db } from '../../src/services/FirebaseConfig';
 import { collection, query, orderBy, onSnapshot, Timestamp } from 'firebase/firestore';
-import { VerifyReportComponent } from '../../src/components';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
@@ -68,7 +67,6 @@ export default function CourtInfoScreen() {
   const [distance, setDistance] = useState<string>('');
   const [reports, setReports] = useState<Report[]>([]);
   const [loadingReports, setLoadingReports] = useState(false);
-  const [verifyingReportId, setVerifyingReportId] = useState<string | null>(null);
 
   useEffect(() => {
     initializeCourtInfo();
@@ -465,73 +463,57 @@ export default function CourtInfoScreen() {
         {/* Reports Section */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Recent Reports</Text>
+          
           {loadingReports ? (
             <View style={styles.reportsLoadingContainer}>
               <ActivityIndicator size="small" color="#666" />
               <Text style={styles.reportsLoadingText}>Loading reports...</Text>
             </View>
-          ) : reports.length > 0 ? (
-            <View style={styles.reportsContainer}>
-              {reports.map((report) => (
-                <View key={report.id} style={styles.reportCard}>
-                  <View style={styles.reportHeader}>
-                    <View style={styles.reportStatusContainer}>
-                      <View style={[styles.reportStatusDot, { backgroundColor: getReportStatusColor(report.status) }]} />
-                      <Text style={styles.reportStatus}>{getReportStatusText(report.status)}</Text>
-                    </View>
-                    <Text style={styles.reportDate}>
-                      {formatReportDate(report.reportedAt)}
-                    </Text>
-                  </View>
-
-                  <Text style={styles.reportDescription}>{report.description}</Text>
-
-                  <View style={styles.reportFooter}>
-                    <View style={styles.reportUser}>
-                      <Ionicons name="person-circle-outline" size={16} color="#666" />
-                      <Text style={styles.reportUserName}>Reported by {report.userName}</Text>
-                    </View>
-                    {report.imageCount > 0 && (
-                      <View style={styles.reportImages}>
-                        <Ionicons name="camera-outline" size={16} color="#666" />
-                        <Text style={styles.reportImageCount}>{report.imageCount} photo{report.imageCount > 1 ? 's' : ''}</Text>
-                      </View>
-                    )}
-                  </View>
-
-                  {/* Verification Button */}
-                  <TouchableOpacity 
-                    style={styles.verifyButton}
-                    onPress={() => setVerifyingReportId(verifyingReportId === report.id ? null : report.id)}
-                  >
-                    <Ionicons 
-                      name={verifyingReportId === report.id ? "close-outline" : "camera-outline"} 
-                      size={18} 
-                      color="#007AFF" 
-                    />
-                    <Text style={styles.verifyButtonText}>
-                      {verifyingReportId === report.id ? "Cancel Verification" : "Verify This Report"}
-                    </Text>
-                  </TouchableOpacity>
-
-                  {/* Verification Component */}
-                  {verifyingReportId === report.id && court && (
-                    <View style={styles.verificationContainer}>
-                      <VerifyReportComponent 
-                        courtId={court.place_id}
-                        reportId={report.id}
-                      />
-                    </View>
-                  )}
-                </View>
-              ))}
-            </View>
           ) : (
-            <View style={styles.noReportsContainer}>
-              <Ionicons name="checkmark-circle-outline" size={48} color="#4CAF50" />
-              <Text style={styles.noReportsText}>No issues reported</Text>
-              <Text style={styles.noReportsSubtext}>This court appears to be in good condition!</Text>
-            </View>
+            <TouchableOpacity 
+              style={styles.viewReportsButton}
+              onPress={() => {
+                router.push({
+                  pathname: '/courts/reports-list' as any,
+                  params: {
+                    courtData: JSON.stringify(court)
+                  }
+                });
+              }}
+            >
+              <View style={styles.viewReportsContent}>
+                <View style={styles.viewReportsHeader}>
+                  <Ionicons name="document-text-outline" size={24} color="#333" />
+                  <View style={styles.viewReportsTextContainer}>
+                    <Text style={styles.viewReportsTitle}>
+                      {reports.length === 0 ? 'No Reports' : 
+                       reports.length === 1 ? '1 Report' : 
+                       `${reports.length} Reports`}
+                    </Text>
+                    <Text style={styles.viewReportsSubtitle}>
+                      {reports.length === 0 ? 'This court has no reported issues' :
+                       'Tap to view all court reports and verify them'}
+                    </Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={20} color="#666" />
+                </View>
+                
+                {reports.length > 0 && (
+                  <View style={styles.latestReportPreview}>
+                    <Text style={styles.latestReportLabel}>Latest:</Text>
+                    <View style={styles.latestReportContent}>
+                      <View style={[styles.reportStatusDot, { backgroundColor: getReportStatusColor(reports[0].status) }]} />
+                      <Text style={styles.latestReportText} numberOfLines={1}>
+                        {reports[0].description}
+                      </Text>
+                      <Text style={styles.latestReportDate}>
+                        {formatReportDate(reports[0].reportedAt)}
+                      </Text>
+                    </View>
+                  </View>
+                )}
+              </View>
+            </TouchableOpacity>
           )}
         </View>
 
@@ -841,27 +823,52 @@ const styles = StyleSheet.create({
     color: '#666',
     marginLeft: 12,
   },
-  reportsContainer: {
-    backgroundColor: 'transparent',
-  },
-  reportCard: {
+  viewReportsButton: {
     backgroundColor: 'white',
     borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
     elevation: 2,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
     shadowRadius: 2,
   },
-  reportHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
+  viewReportsContent: {
+    padding: 16,
   },
-  reportStatusContainer: {
+  viewReportsHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  viewReportsTextContainer: {
+    flex: 1,
+    marginLeft: 12,
+    marginRight: 8,
+  },
+  viewReportsTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 2,
+  },
+  viewReportsSubtitle: {
+    fontSize: 14,
+    color: '#666',
+    lineHeight: 18,
+  },
+  latestReportPreview: {
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#F0F0F0',
+  },
+  latestReportLabel: {
+    fontSize: 12,
+    color: '#888',
+    fontWeight: '500',
+    marginBottom: 6,
+  },
+  latestReportContent: {
     flexDirection: 'row',
     alignItems: 'center',
   },
@@ -871,90 +878,14 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     marginRight: 8,
   },
-  reportStatus: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#333',
-  },
-  reportDate: {
-    fontSize: 12,
-    color: '#666',
-  },
-  reportDescription: {
-    fontSize: 16,
-    color: '#333',
-    lineHeight: 22,
-    marginBottom: 12,
-  },
-  reportFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  reportUser: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  latestReportText: {
     flex: 1,
-  },
-  reportUserName: {
-    fontSize: 12,
-    color: '#666',
-    marginLeft: 6,
-  },
-  reportImages: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  reportImageCount: {
-    fontSize: 12,
-    color: '#666',
-    marginLeft: 4,
-  },
-  noReportsContainer: {
-    backgroundColor: 'white',
-    borderRadius: 12,
-    padding: 40,
-    alignItems: 'center',
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-  },
-  noReportsText: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: 14,
     color: '#333',
-    marginTop: 16,
+    marginRight: 8,
   },
-  noReportsSubtext: {
-    fontSize: 14,
+  latestReportDate: {
+    fontSize: 12,
     color: '#666',
-    marginTop: 8,
-    textAlign: 'center',
-  },
-  verifyButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#F0F8FF',
-    borderWidth: 1,
-    borderColor: '#007AFF',
-    borderRadius: 8,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    marginTop: 12,
-  },
-  verifyButtonText: {
-    fontSize: 14,
-    color: '#007AFF',
-    fontWeight: '600',
-    marginLeft: 6,
-  },
-  verificationContainer: {
-    marginTop: 16,
-    borderTopWidth: 1,
-    borderTopColor: '#E5E5E5',
-    paddingTop: 16,
   },
 });
