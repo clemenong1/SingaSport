@@ -16,6 +16,7 @@ import {
   serverTimestamp 
 } from 'firebase/firestore';
 import { db, storage, auth } from '../services/FirebaseConfig';
+import { userService } from '../utils/userService';
 
 interface VerifyReportComponentProps {
   courtId: string;
@@ -181,22 +182,44 @@ const VerifyReportComponent: React.FC<VerifyReportComponentProps> = ({
               aiVerified: false,
             });
 
+            // Award points for verification
+            try {
+              // Ensure user profile exists before awarding points
+              await userService.ensureUserProfileExists(userId, auth.currentUser?.email || undefined);
+              await userService.awardPointsForVerification(userId);
+              Alert.alert(
+                'Success!', 
+                'Your verification photo has been submitted successfully. You earned 10 points for helping verify this report!',
+                [
+                  {
+                    text: 'OK',
+                    onPress: () => {
+                      setIsSuccess(false);
+                      setSelectedImage(null);
+                    },
+                  },
+                ]
+              );
+            } catch (pointsError) {
+              console.error('Error awarding points:', pointsError);
+              // Still show success message even if points fail
+              Alert.alert(
+                'Success!', 
+                'Your verification photo has been submitted successfully.',
+                [
+                  {
+                    text: 'OK',
+                    onPress: () => {
+                      setIsSuccess(false);
+                      setSelectedImage(null);
+                    },
+                  },
+                ]
+              );
+            }
+
             setIsUploading(false);
             setIsSuccess(true);
-            
-            Alert.alert(
-              'Success!', 
-              'Your verification photo has been submitted successfully.',
-              [
-                {
-                  text: 'OK',
-                  onPress: () => {
-                    setIsSuccess(false);
-                    setSelectedImage(null);
-                  },
-                },
-              ]
-            );
           } catch (firestoreError) {
             console.error('Firestore error:', firestoreError);
             setIsUploading(false);

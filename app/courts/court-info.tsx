@@ -55,6 +55,7 @@ interface Report {
   userName: string;
   reportedAt: any;
   imageCount: number;
+  photoUrls?: string[];
   status: 'open' | 'investigating' | 'resolved';
 }
 

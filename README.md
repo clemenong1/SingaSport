@@ -260,6 +260,25 @@ SingaSport/
 - 👤 **User Profiles**: Authentication and profile management
 - 📊 **Court Reports**: Report issues and maintenance needs
 - 🔄 **Real-time Updates**: Live data synchronization across all users
+- 🏆 **Gamification System**: Points-based rewards for community contributions
+
+### Gamification System
+The app includes a points-based gamification system to encourage user engagement and community contributions:
+
+#### Points Earning
+- **Report Submission**: +10 points for submitting a court issue report
+- **Report Verification**: +10 points for uploading verification photos
+
+#### Points Display
+- Points are prominently displayed in the user profile
+- Real-time updates when points are earned
+- Visual breakdown of how to earn points
+
+#### Technical Implementation
+- Points are stored in the user's Firestore document
+- Atomic increments prevent race conditions
+- Automatic migration for existing users
+- Real-time synchronization across the app
 
 ### App Structure
 - **Map Tab** (`main.tsx`): Interactive map with court locations and real-time data

@@ -15,8 +15,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
-import { auth, db } from '../../src/services/FirebaseConfig';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { auth, db, storage } from '../../src/services/FirebaseConfig';
+import { collection, addDoc, serverTimestamp, updateDoc, doc } from 'firebase/firestore';
+import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
+import { userService } from '../../src/utils/userService';
 
 interface Court {
   place_id: string;
@@ -116,6 +118,48 @@ export default function ReportPageScreen() {
     setImages(images.filter(img => img.id !== imageId));
   };
 
+  const uploadImageToStorage = async (imageUri: string, reportId: string, imageIndex: number): Promise<string> => {
+    try {
+      // Convert image URI to blob
+      const response = await fetch(imageUri);
+      const blob = await response.blob();
+
+      // Create storage reference
+      const fileName = `report_${reportId}_${imageIndex}_${Date.now()}.jpg`;
+      const storageRef = ref(storage, `reportPhotos/${reportId}/${fileName}`);
+
+      // Upload image
+      const uploadTask = uploadBytesResumable(storageRef, blob);
+
+      return new Promise((resolve, reject) => {
+        uploadTask.on(
+          'state_changed',
+          (snapshot) => {
+            // Progress monitoring (optional)
+            const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+            console.log('Upload progress:', progress);
+          },
+          (error) => {
+            console.error('Upload error:', error);
+            reject(error);
+          },
+          async () => {
+            try {
+              // Get download URL
+              const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+              resolve(downloadURL);
+            } catch (error) {
+              reject(error);
+            }
+          }
+        );
+      });
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      throw error;
+    }
+  };
+
   const showImageOptions = () => {
     Alert.alert(
       'Add Photo',
@@ -146,7 +190,7 @@ export default function ReportPageScreen() {
 
     setLoading(true);
     try {
-
+      // First create the report document
       const reportData = {
         courtId: court.place_id,
         courtName: court.name,
@@ -159,18 +203,58 @@ export default function ReportPageScreen() {
       };
 
       const reportsRef = collection(db, 'basketballCourts', court.place_id, 'reports');
-      await addDoc(reportsRef, reportData);
+      const reportDoc = await addDoc(reportsRef, reportData);
+      const reportId = reportDoc.id;
 
-      Alert.alert(
-        'Report Submitted',
-        'Thank you for reporting this issue. The court management will review your report.',
-        [
-          {
-            text: 'OK',
-            onPress: () => router.back(),
-          },
-        ]
-      );
+      // Upload images if any
+      let photoUrls: string[] = [];
+      if (images.length > 0) {
+        try {
+          const uploadPromises = images.map((image, index) => 
+            uploadImageToStorage(image.uri, reportId, index)
+          );
+          photoUrls = await Promise.all(uploadPromises);
+          
+          // Update the report with photo URLs
+          await updateDoc(doc(db, 'basketballCourts', court.place_id, 'reports', reportId), {
+            photoUrls: photoUrls,
+            imageCount: photoUrls.length
+          });
+        } catch (uploadError) {
+          console.error('Error uploading images:', uploadError);
+          // Continue with report submission even if image upload fails
+        }
+      }
+
+      // Award points for submitting a report
+      try {
+        // Ensure user profile exists before awarding points
+        await userService.ensureUserProfileExists(auth.currentUser.uid, auth.currentUser.email || undefined);
+        await userService.awardPointsForReport(auth.currentUser.uid);
+        Alert.alert(
+          'Report Submitted',
+          `Thank you for reporting this issue! You earned 10 points for your contribution. ${photoUrls.length > 0 ? `Your ${photoUrls.length} photo(s) have been uploaded.` : ''} The court management will review your report.`,
+          [
+            {
+              text: 'OK',
+              onPress: () => router.back(),
+            },
+          ]
+        );
+      } catch (pointsError) {
+        console.error('Error awarding points:', pointsError);
+        // Still show success message even if points fail
+        Alert.alert(
+          'Report Submitted',
+          `Thank you for reporting this issue! ${photoUrls.length > 0 ? `Your ${photoUrls.length} photo(s) have been uploaded.` : ''} The court management will review your report.`,
+          [
+            {
+              text: 'OK',
+              onPress: () => router.back(),
+            },
+          ]
+        );
+      }
     } catch (error) {
       console.error('Error submitting report:', error);
       Alert.alert('Error', 'Failed to submit report. Please try again.');
