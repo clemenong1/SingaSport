@@ -17,10 +17,14 @@ import {
 } from 'firebase/firestore';
 import { db, storage, auth } from '../services/FirebaseConfig';
 import { userService } from '../utils/userService';
+import { AIVerificationIntegratedUpload } from './AIVerificationIntegratedUpload';
+import { TempImageData } from '../types';
 
 interface VerifyReportComponentProps {
   courtId: string;
   reportId: string;
+  reportDescription?: string;
+  courtName?: string;
 }
 
 interface UploadProgress {
@@ -29,9 +33,11 @@ interface UploadProgress {
   percentage: number;
 }
 
-const VerifyReportComponent: React.FC<VerifyReportComponentProps> = ({
+export const VerifyReportComponent: React.FC<VerifyReportComponentProps> = ({
   courtId,
   reportId,
+  reportDescription = "Verification of reported court condition",
+  courtName,
 }) => {
   const [isUploading, setIsUploading] = useState<boolean>(false);
   const [uploadProgress, setUploadProgress] = useState<UploadProgress>({ 
@@ -41,6 +47,7 @@ const VerifyReportComponent: React.FC<VerifyReportComponentProps> = ({
   });
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [isSuccess, setIsSuccess] = useState<boolean>(false);
+  const [useTraditionalUpload, setUseTraditionalUpload] = useState<boolean>(false);
 
   const requestPermissions = async (): Promise<boolean> => {
     const cameraPermission = await ImagePicker.requestCameraPermissionsAsync();
@@ -180,6 +187,7 @@ const VerifyReportComponent: React.FC<VerifyReportComponentProps> = ({
               photoUrl: downloadURL,
               timestamp: serverTimestamp(),
               aiVerified: false,
+              traditional: true, // Mark as traditional upload
             });
 
             // Award points for verification
@@ -234,6 +242,85 @@ const VerifyReportComponent: React.FC<VerifyReportComponentProps> = ({
     }
   };
 
+  const handleAIVerifiedSuccess = async (imageData: TempImageData): Promise<void> => {
+    if (!auth.currentUser) {
+      Alert.alert('Error', 'You must be logged in to verify reports.');
+      return;
+    }
+
+    const userId = auth.currentUser.uid;
+
+    try {
+      // Create verification document in Firestore with AI verification data
+      const verificationsRef = collection(
+        db, 
+        'basketballCourts', 
+        courtId, 
+        'reports', 
+        reportId, 
+        'verifications'
+      );
+
+      await addDoc(verificationsRef, {
+        verifierId: userId,
+        photoUrl: imageData.permanentStorageUrl,
+        timestamp: serverTimestamp(),
+        aiVerified: imageData.aiVerified || false,
+        aiVerificationResponse: imageData.verificationResponse,
+        traditional: false, // Mark as AI-verified upload
+      });
+
+      // Award points for verification
+      try {
+        await userService.ensureUserProfileExists(userId, auth.currentUser?.email || undefined);
+        await userService.awardPointsForVerification(userId);
+        
+        // Extra points for AI-verified photos
+        if (imageData.aiVerified) {
+          await userService.awardBonusPointsForAIVerification(userId, 5);
+        }
+        
+        Alert.alert(
+          'Success!', 
+          `Your verification photo has been AI-verified and submitted successfully! You earned ${imageData.aiVerified ? '15' : '10'} points for helping verify this report!`,
+          [
+            {
+              text: 'OK',
+              onPress: () => {
+                setIsSuccess(false);
+                setSelectedImage(null);
+              },
+            },
+          ]
+        );
+      } catch (pointsError) {
+        console.error('Error awarding points:', pointsError);
+        Alert.alert(
+          'Success!', 
+          'Your verification photo has been submitted successfully.',
+          [
+            {
+              text: 'OK',
+              onPress: () => {
+                setIsSuccess(false);
+                setSelectedImage(null);
+              },
+            },
+          ]
+        );
+      }
+
+      setIsSuccess(true);
+    } catch (firestoreError) {
+      console.error('Firestore error:', firestoreError);
+      Alert.alert('Error', 'Failed to save verification. Please try again.');
+    }
+  };
+
+  const handleAIVerificationError = (error: string): void => {
+    Alert.alert('Verification Error', error);
+  };
+
   const resetComponent = (): void => {
     setSelectedImage(null);
     setIsSuccess(false);
@@ -262,40 +349,74 @@ const VerifyReportComponent: React.FC<VerifyReportComponentProps> = ({
       <View style={styles.content}>
         <Text style={styles.title}>Help Verify This Report</Text>
         <Text style={styles.description}>
-          Take a photo of the current court conditions to help verify this report's accuracy.
+          Take a photo of the current court conditions to help verify this report's accuracy. 
+          {!useTraditionalUpload && ' AI will verify your photo matches the reported condition.'}
         </Text>
         
-        {selectedImage && (
-          <View style={styles.imagePreviewContainer}>
-            <Image source={{ uri: selectedImage }} style={styles.imagePreview} />
-          </View>
+        {/* AI-Powered Upload (Default) */}
+        {!useTraditionalUpload && !isUploading && (
+          <AIVerificationIntegratedUpload
+            reportDescription={reportDescription}
+            courtContext={courtName}
+            type="verification"
+            contextId={reportId}
+            userId={auth.currentUser?.uid || 'anonymous'}
+            onSuccess={handleAIVerifiedSuccess}
+            onError={handleAIVerificationError}
+            disabled={isUploading}
+            maxImages={1}
+            currentImageCount={0}
+          />
         )}
 
-        {isUploading ? (
-          <View style={styles.uploadingContainer}>
-            <ActivityIndicator size="large" color="#007AFF" />
-            <Text style={styles.uploadingText}>
-              Uploading photo... {uploadProgress.percentage}%
-            </Text>
-            <View style={styles.progressBarContainer}>
-              <View 
-                style={[
-                  styles.progressBar, 
-                  { width: `${uploadProgress.percentage}%` }
-                ]} 
-              />
-            </View>
-            <Text style={styles.progressText}>
-              {Math.round(uploadProgress.bytesTransferred / 1024)} KB / {Math.round(uploadProgress.totalBytes / 1024)} KB
-            </Text>
-          </View>
-        ) : (
+        {/* Traditional Upload Option */}
+        {(useTraditionalUpload || isUploading) && (
+          <>
+            {selectedImage && (
+              <View style={styles.imagePreviewContainer}>
+                <Image source={{ uri: selectedImage }} style={styles.imagePreview} />
+              </View>
+            )}
+
+            {isUploading ? (
+              <View style={styles.uploadingContainer}>
+                <ActivityIndicator size="large" color="#007AFF" />
+                <Text style={styles.uploadingText}>
+                  Uploading photo... {uploadProgress.percentage}%
+                </Text>
+                <View style={styles.progressBarContainer}>
+                  <View 
+                    style={[
+                      styles.progressBar, 
+                      { width: `${uploadProgress.percentage}%` }
+                    ]} 
+                  />
+                </View>
+                <Text style={styles.progressText}>
+                  {Math.round(uploadProgress.bytesTransferred / 1024)} KB / {Math.round(uploadProgress.totalBytes / 1024)} KB
+                </Text>
+              </View>
+            ) : (
+              <TouchableOpacity 
+                style={styles.verifyButton} 
+                onPress={showImagePickerOptions}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.verifyButtonText}>📸 Upload Without AI Verification</Text>
+              </TouchableOpacity>
+            )}
+          </>
+        )}
+
+        {/* Toggle Button */}
+        {!isUploading && !isSuccess && (
           <TouchableOpacity 
-            style={styles.verifyButton} 
-            onPress={showImagePickerOptions}
-            activeOpacity={0.8}
+            style={styles.toggleButton}
+            onPress={() => setUseTraditionalUpload(!useTraditionalUpload)}
           >
-            <Text style={styles.verifyButtonText}>📸 Verify This Report</Text>
+            <Text style={styles.toggleButtonText}>
+              {useTraditionalUpload ? 'Use AI Verification' : 'Upload Without AI Verification'}
+            </Text>
           </TouchableOpacity>
         )}
       </View>
@@ -423,6 +544,17 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '500',
   },
-});
-
-export default VerifyReportComponent; 
+  toggleButton: {
+    marginTop: 12,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    backgroundColor: '#F5F5F5',
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  toggleButtonText: {
+    fontSize: 12,
+    color: '#666',
+    textDecorationLine: 'underline',
+  },
+}); 

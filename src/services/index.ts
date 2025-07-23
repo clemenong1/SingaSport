@@ -1,3 +1,5 @@
 export * from './FirebaseConfig';
 export { auth, db, storage } from './FirebaseConfig';
-export { gameService } from './gameService';
+export * from './gameService';
+export * from './aiVisionService';
+export * from './tempStorageService';

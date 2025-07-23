@@ -8,4 +8,5 @@ declare module '@env' {
   export const EXPO_PUBLIC_GOOGLE_PLACES_API_KEY: string;
   export const EXPO_PUBLIC_IOS_GOOGLE_MAPS_API_KEY: string;
   export const EXPO_PUBLIC_ANDROID_GOOGLE_MAPS_API_KEY: string;
+  export const EXPO_PUBLIC_OPENAI_API_KEY: string;
 }
