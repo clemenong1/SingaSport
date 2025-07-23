@@ -11,7 +11,7 @@ const OPENAI_API_KEY = process.env.EXPO_PUBLIC_OPENAI_API_KEY;
 
 export default function SingaChat() {
   const [messages, setMessages] = useState([
-    { role: 'assistant', content: 'Hi! I am Singa, your AI assistant. Ask me anything about basketball courts, recent reports, or recommendations!' }
+    { role: 'assistant', content: 'Hi! I am Singa, your personal assistant. Ask me anything about basketball courts, recent reports, or recommendations!' }
   ]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -65,7 +65,7 @@ export default function SingaChat() {
             { role: 'system', content: systemPrompt },
             ...[...messages, userMessage].map(m => ({ role: m.role, content: m.content }))
           ],
-          max_tokens: 300,
+          max_tokens: 100,
         }),
       });
       const data = await response.json();
@@ -154,7 +154,7 @@ export default function SingaChat() {
             <Ionicons name="arrow-back" size={26} color="#000" />
           </TouchableOpacity>
           <Ionicons name="chatbubble-ellipses" size={24} color="#007BFF" style={{ marginRight: 8, marginLeft: 4 }} />
-          <Text style={styles.headerTitle}>Singa (AI Chatbot)</Text>
+          <Text style={styles.headerTitle}> Find a court that best suits you! </Text>
         </View>
         <FlatList
           ref={flatListRef}
