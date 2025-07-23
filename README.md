@@ -107,15 +107,15 @@ SingaSport/
 ### Installation
 
 1. **Clone and Install**
-```bash
+    ```bash
 git clone <repository-url>
 cd SingaSport
-npm install
-```
+    npm install
+    ```
 
 2. **Environment Setup**
 Create a `.env` file with required API keys:
-```bash
+    ```bash
 # Firebase Configuration
 EXPO_PUBLIC_FIREBASE_API_KEY=your_firebase_api_key
 EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
