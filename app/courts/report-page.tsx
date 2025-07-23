@@ -19,6 +19,8 @@ import { auth, db, storage } from '../../src/services/FirebaseConfig';
 import { collection, addDoc, serverTimestamp, updateDoc, doc } from 'firebase/firestore';
 import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { userService } from '../../src/utils/userService';
+import { AIVerificationIntegratedUpload } from '../../src/components';
+import { TempImageData } from '../../src/types';
 
 interface Court {
   place_id: string;
@@ -37,6 +39,8 @@ interface Court {
 interface ReportImage {
   uri: string;
   id: string;
+  aiVerified?: boolean;
+  permanentUrl?: string;
 }
 
 export default function ReportPageScreen() {
@@ -116,6 +120,20 @@ export default function ReportPageScreen() {
 
   const removeImage = (imageId: string) => {
     setImages(images.filter(img => img.id !== imageId));
+  };
+
+  const handleAIVerifiedImageSuccess = (imageData: TempImageData) => {
+    const newImage: ReportImage = {
+      uri: imageData.uri,
+      id: imageData.id,
+      aiVerified: imageData.aiVerified,
+      permanentUrl: imageData.permanentStorageUrl,
+    };
+    setImages([...images, newImage]);
+  };
+
+  const handleAIVerificationError = (error: string) => {
+    Alert.alert('Upload Error', error);
   };
 
   const uploadImageToStorage = async (imageUri: string, reportId: string, imageIndex: number): Promise<string> => {
@@ -206,54 +224,100 @@ export default function ReportPageScreen() {
       const reportDoc = await addDoc(reportsRef, reportData);
       const reportId = reportDoc.id;
 
-      // Upload images if any
+      // Handle images - use permanent URLs if AI verified, otherwise upload traditionally
       let photoUrls: string[] = [];
+      const aiVerificationResults: any[] = [];
+      
       if (images.length > 0) {
         try {
-          const uploadPromises = images.map((image, index) => 
-            uploadImageToStorage(image.uri, reportId, index)
-          );
+          const uploadPromises = images.map(async (image, index) => {
+            // If image is AI verified and has permanent URL, use it
+            if (image.aiVerified && image.permanentUrl) {
+              // Track AI verification for the report
+              if (image.aiVerified) {
+                aiVerificationResults.push({
+                  imageIndex: index,
+                  verified: true,
+                  url: image.permanentUrl
+                });
+              }
+              return image.permanentUrl;
+            } else {
+              // Fall back to traditional upload
+              return uploadImageToStorage(image.uri, reportId, index);
+            }
+          });
+          
           photoUrls = await Promise.all(uploadPromises);
           
-          // Update the report with photo URLs
-          await updateDoc(doc(db, 'basketballCourts', court.place_id, 'reports', reportId), {
+          // Update the report with photo URLs and AI verification status
+          const updateData: any = {
             photoUrls: photoUrls,
             imageCount: photoUrls.length
-          });
+          };
+          
+          // Add AI verification data if any images were verified
+          if (aiVerificationResults.length > 0) {
+            updateData.aiVerificationStatus = 'verified';
+            updateData.verificationDetails = aiVerificationResults;
+          }
+          
+          await updateDoc(doc(db, 'basketballCourts', court.place_id, 'reports', reportId), updateData);
         } catch (uploadError) {
           console.error('Error uploading images:', uploadError);
           // Continue with report submission even if image upload fails
         }
       }
 
-      // Award points for submitting a report
-      try {
-        // Ensure user profile exists before awarding points
-        await userService.ensureUserProfileExists(auth.currentUser.uid, auth.currentUser.email || undefined);
-        await userService.awardPointsForReport(auth.currentUser.uid);
-        Alert.alert(
-          'Report Submitted',
-          `Thank you for reporting this issue! You earned 10 points for your contribution. ${photoUrls.length > 0 ? `Your ${photoUrls.length} photo(s) have been uploaded.` : ''} The court management will review your report.`,
-          [
-            {
-              text: 'OK',
-              onPress: () => router.back(),
-            },
-          ]
-        );
+              // Award points for submitting a report
+        try {
+          // Ensure user profile exists before awarding points
+          await userService.ensureUserProfileExists(auth.currentUser.uid, auth.currentUser.email || undefined);
+          await userService.awardPointsForReport(auth.currentUser.uid);
+          
+          // Award bonus points for AI-verified photos
+          if (aiVerificationResults.length > 0) {
+            await userService.awardBonusPointsForAIVerification(auth.currentUser.uid, aiVerificationResults.length * 5);
+          }
+        const aiVerifiedCount = aiVerificationResults.length;
+        const totalPhotos = photoUrls.length;
+        const bonusPoints = aiVerifiedCount * 5; // Extra points for AI-verified photos
+        
+        let message = `Thank you for reporting this issue! You earned 10 points for your contribution.`;
+        
+        if (totalPhotos > 0) {
+          message += ` Your ${totalPhotos} photo(s) have been uploaded.`;
+          if (aiVerifiedCount > 0) {
+            message += ` ${aiVerifiedCount} photo(s) were AI-verified, earning you ${bonusPoints} bonus points!`;
+          }
+        }
+        
+        message += ` The court management will review your report.`;
+        
+        Alert.alert('Report Submitted', message, [
+          {
+            text: 'OK',
+            onPress: () => router.back(),
+          },
+        ]);
       } catch (pointsError) {
         console.error('Error awarding points:', pointsError);
         // Still show success message even if points fail
-        Alert.alert(
-          'Report Submitted',
-          `Thank you for reporting this issue! ${photoUrls.length > 0 ? `Your ${photoUrls.length} photo(s) have been uploaded.` : ''} The court management will review your report.`,
-          [
-            {
-              text: 'OK',
-              onPress: () => router.back(),
-            },
-          ]
-        );
+        const totalPhotos = photoUrls.length;
+        let message = `Thank you for reporting this issue!`;
+        
+        if (totalPhotos > 0) {
+          message += ` Your ${totalPhotos} photo(s) have been uploaded.`;
+        }
+        
+        message += ` The court management will review your report.`;
+        
+        Alert.alert('Report Submitted', message, [
+          {
+            text: 'OK',
+            onPress: () => router.back(),
+          },
+        ]);
       }
     } catch (error) {
       console.error('Error submitting report:', error);
@@ -347,7 +411,7 @@ export default function ReportPageScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Photos (Optional)</Text>
           <Text style={styles.sectionSubtitle}>
-            Add photos to help illustrate the issue
+            Add AI-verified photos to help illustrate the issue. The AI will check if your photos match your description.
           </Text>
 
           {images.length > 0 && (
@@ -355,6 +419,15 @@ export default function ReportPageScreen() {
               {images.map((image) => (
                 <View key={image.id} style={styles.imageContainer}>
                   <Image source={{ uri: image.uri }} style={styles.image} />
+                  
+                  {/* AI Verification Badge */}
+                  {image.aiVerified && (
+                    <View style={styles.verificationBadge}>
+                      <Ionicons name="checkmark-circle" size={16} color="#4CAF50" />
+                      <Text style={styles.verificationText}>AI Verified</Text>
+                    </View>
+                  )}
+                  
                   <TouchableOpacity
                     style={styles.removeImageButton}
                     onPress={() => removeImage(image.id)}
@@ -366,9 +439,27 @@ export default function ReportPageScreen() {
             </ScrollView>
           )}
 
-          <TouchableOpacity style={styles.addPhotoButton} onPress={showImageOptions}>
-            <Ionicons name="camera-outline" size={24} color="#666" />
-            <Text style={styles.addPhotoText}>Add Photo</Text>
+          {/* AI-Powered Upload Component */}
+          <AIVerificationIntegratedUpload
+            reportDescription={description}
+            courtContext={court?.name}
+            type="report"
+            contextId={court?.place_id || 'unknown'}
+            userId={auth.currentUser?.uid || 'anonymous'}
+            onSuccess={handleAIVerifiedImageSuccess}
+            onError={handleAIVerificationError}
+            disabled={loading || images.length >= 5}
+            maxImages={5}
+            currentImageCount={images.length}
+          />
+
+          {/* Fallback traditional upload button for when AI is unavailable */}
+          <TouchableOpacity 
+            style={[styles.fallbackButton, { display: images.length >= 5 ? 'none' : 'flex' }]} 
+            onPress={showImageOptions}
+          >
+            <Ionicons name="camera-outline" size={20} color="#666" />
+            <Text style={styles.fallbackButtonText}>Add Photo (Traditional Upload)</Text>
           </TouchableOpacity>
         </View>
 
@@ -569,5 +660,39 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#333',
     marginLeft: 12,
+  },
+  verificationBadge: {
+    position: 'absolute',
+    top: 4,
+    left: 4,
+    backgroundColor: 'rgba(76, 175, 80, 0.9)',
+    borderRadius: 12,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  verificationText: {
+    fontSize: 10,
+    color: 'white',
+    fontWeight: '600',
+    marginLeft: 2,
+  },
+  fallbackButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#F5F5F5',
+    borderWidth: 1,
+    borderColor: '#DDD',
+    borderRadius: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    marginTop: 8,
+  },
+  fallbackButtonText: {
+    fontSize: 12,
+    color: '#666',
+    marginLeft: 4,
   },
 });

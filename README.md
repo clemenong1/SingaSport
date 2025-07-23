@@ -1,327 +1,325 @@
-# 📱 SingaSport
+# SingaSport 🏀
 
-**We optimize public sports facility usage in Singapore by providing real-time availability,  
-crowd data, and social features to enhance the playing experience and build a connected sporting community.**
+A community-driven React Native app for finding and managing basketball courts across Singapore, featuring real-time court data, AI-powered image verification, and gamified community engagement.
 
----
+## ✨ Key Features
 
-This is a mobile application built using [Expo](https://expo.dev/) and [React Native](https://reactnative.dev/). 
----
+### 🗺️ **Interactive Court Discovery**
+- Real-time basketball court locations across Singapore
+- Live crowd counting with geofencing technology
+- Court search and filtering by location, amenities, and status
+- Detailed court information with photos and reports
 
-## 🚀 Getting Started
+### 🤖 **AI-Powered Image Verification**
+- **OpenAI Vision Integration**: Uses GPT-4V to verify report accuracy
+- **Real-time Verification**: Instant feedback on photo submissions
+- **Smart Matching**: AI analyzes if photos match report descriptions
+- **Cost-Optimized**: Built-in rate limiting and compression
+- **Fallback Support**: Traditional upload when AI is unavailable
 
-### ✅ Prerequisites
+### 🏀 **Game Scheduling & Community**
+- Create and join basketball games at any court
+- Real-time RSVP system with capacity management
+- Game filtering by skill level, type, and schedule
+- Community-driven court maintenance reporting
 
-Before you begin, ensure you have the following installed and set up:
+### 🏆 **Gamification System**
+- **Base Points**: 10 points for reports, 15 for verifications
+- **AI Verification Bonus**: Extra 5 points per AI-verified photo
+- **Real-time Updates**: Instant point notifications
+- **Community Leaderboard**: Coming soon
 
-- [Node.js](https://nodejs.org/)
-- [Expo CLI](https://docs.expo.dev/get-started/installation/)
-- [Expo account](https://expo.dev/signup)
+### 📊 **Advanced Reporting System**
+- **Court Issue Reporting**: Report maintenance needs, crowding, surface issues
+- **AI Verification**: Photos automatically verified for accuracy
+- **Community Verification**: Other users can verify reports with photos
+- **Status Tracking**: Open, investigating, resolved status workflow
+- **Real-time Updates**: Live report synchronization
 
-### 📦 Installation
+## 🛠️ Technical Architecture
 
-1. **Clone the repository:**
+### **Frontend**: React Native with Expo Router
+- File-based routing for intuitive navigation
+- TypeScript for type safety and better development experience
+- Real-time UI updates with optimistic rendering
 
+### **Backend**: Firebase Ecosystem
+- **Firestore**: NoSQL database for scalable data storage
+- **Firebase Storage**: Optimized image storage with temporary/permanent separation
+- **Firebase Auth**: Secure user authentication and profile management
+- **Real-time Listeners**: Live data synchronization across all users
+
+### **AI Integration**: OpenAI Vision API
+- **Model**: GPT-4V for advanced image analysis
+- **Custom Prompts**: Basketball court-specific verification prompts
+- **Error Handling**: Comprehensive retry logic and graceful degradation
+- **Cost Controls**: Request deduplication, rate limiting, and image compression
+
+### **Geofencing**: Location-based Features
+- **Background Location Tracking**: Continuous court proximity monitoring
+- **Dynamic People Counting**: Automatic court occupancy updates
+- **Notification System**: Alerts for court entry/exit events
+
+## 🏗️ Project Structure
+
+```
+SingaSport/
+├── app/                               # Expo Router screens
+│   ├── (tabs)/                       # Main navigation tabs
+│   │   ├── main.tsx                  # Interactive map with real-time data
+│   │   ├── two.tsx                   # Game scheduling & community
+│   │   └── three.tsx                 # User profile & settings
+│   ├── auth/                         # Authentication flow
+│   ├── courts/                       # Court-related screens
+│   │   ├── court-info.tsx           # Detailed court information
+│   │   ├── report-page.tsx          # AI-powered report submission
+│   │   ├── reports-list.tsx         # Community reports & verification
+│   │   └── search.tsx               # Court search & discovery
+│   └── profile/                      # User profile management
+├── src/
+│   ├── components/                   # Reusable UI components
+│   │   ├── AIVerificationStatusComponent.tsx     # AI verification UI
+│   │   ├── AIVerificationIntegratedUpload.tsx    # Complete upload flow
+│   │   ├── VerifyReportComponent.tsx              # Report verification
+│   │   └── CreateGameModal.tsx                    # Game creation
+│   ├── services/                     # Business logic & API services
+│   │   ├── aiVisionService.ts        # OpenAI Vision integration
+│   │   ├── tempStorageService.ts     # Temporary image management
+│   │   ├── FirebaseConfig.ts         # Firebase setup
+│   │   └── gameService.ts            # Game scheduling
+│   ├── utils/                        # Utility functions
+│   │   └── userService.ts            # User profile & points management
+│   ├── types/                        # TypeScript definitions
+│   │   └── index.ts                  # AI verification & app types
+│   └── constants/                    # App constants & configuration
+└── assets/                           # Static assets (images, fonts)
+```
+
+## 🚀 Quick Start
+
+### Prerequisites
+- Node.js 18+ and npm/yarn
+- Expo CLI (`npm install -g @expo/cli`)
+- Android Studio (for Android) or Xcode (for iOS)
+- OpenAI API key
+- Firebase project with Firestore, Storage, and Authentication enabled
+
+### Installation
+
+1. **Clone and Install**
     ```bash
-    git clone https://github.com/clemenong1/SingaSport.git
-    cd your-repo-name
-    ```
-
-2. **Install dependencies (if needed):**
-
-    ```bash
+git clone <repository-url>
+cd SingaSport
     npm install
     ```
 
-2. **Install dependencies (if needed):**
-
+2. **Environment Setup**
+Create a `.env` file with required API keys:
     ```bash
-    npx expo login
-    ```
-    > You will be prompted to log into your Expo account, fill in the details.
+# Firebase Configuration
+EXPO_PUBLIC_FIREBASE_API_KEY=your_firebase_api_key
+EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
+EXPO_PUBLIC_FIREBASE_PROJECT_ID=your_project_id
+EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET=your_project.appspot.com
+EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
+EXPO_PUBLIC_FIREBASE_APP_ID=your_app_id
 
-5. **Run the app on your physical device (Expo Go):**
+# Google Maps API
+EXPO_PUBLIC_GOOGLE_PLACES_API_KEY=your_google_places_key
+EXPO_PUBLIC_GOOGLE_MAPS_API_KEY=your_google_maps_key
 
-   - Download the **Expo Go** app from the App Store (iOS) or Play Store (Android).
-   - Start the development server:
+# OpenAI Integration
+EXPO_PUBLIC_OPENAI_API_KEY=your_openai_api_key
+```
 
-     ```bash
-     npx expo start
-     ```
-     OR
-
-     ```bash
-     npx expo start --tunnel
-     ```
-
-   - Scan the QR code displayed in the terminal which opens the Expo Go App.
-
-6. **OR Run the app on a simulator:**
-
-    - Ensure that your simulators in the background is running
-    - Click 'i' for IOS simulator or 'a' for android simulator.
-
-## 🧪 Testing
-
-This section explains how to test the **Geofencing** and **Live Basketball Court Occupancy** features in the SingaSport app.
-
----
-
-### 📍 Testing Geofencing & Court Occupancy for Milestone 2
-
-Use these steps to simulate entering and exiting a geofenced basketball court zone using an emulator or physical device.
-
----
-
-#### 1. Start the Expo Development Server
-
-Clear cache and start the app using Expo’s tunnel (recommended for emulators and real devices):
-
+3. **Start Development Server**
 ```bash
 npx expo start --clear --tunnel
 ```
 
----
+### Testing AI Verification
 
-#### 2. Set Emulator Location to VP Sheltered Basketball Court
-
+1. **Set up Emulator Location** (VP Sheltered Basketball Court for testing):
 ```bash
-# In Android Emulator:
-# 1. Open the Extended Controls (three-dot menu on the emulator toolbar)
-# 2. Go to "Location"
-# 3. Enter the following coordinates and click 'Send'
-
+# Android Emulator coordinates
 Latitude: 1.4292847
 Longitude: 103.7974001
-```
 
-Alternatively, you can use ADB to set the location directly:
-
-```bash
+# Or via ADB
 adb emu geo fix 103.7974001 1.4292847
 ```
 
----
+2. **Test Report Submission**:
+   - Navigate to any court → "Report an Issue"
+   - Describe a condition (e.g., "Court is crowded", "Slippery floor")
+   - Take/select a photo → AI will verify if it matches your description
+   - Successful verification earns bonus points!
 
-#### 3. Simulate Arrival at the Court
+3. **Test Verification Flow**:
+   - View existing reports → "Verify This Report"
+   - Submit verification photo → AI ensures it matches the original report
+   - Earn points for successful AI-verified verifications
 
-```text
-1. On your phone, open the app.
-2. In the search bar, type: VP Sheltered Basketball Court
-3. Tap the first result.
-4. Wait 30–60 seconds.
-5. The live count for the court should increase by 1.
+## 🤖 AI Verification System
 
-🔄 If the count does not refresh automatically, press the back button and re-select the court.
+### **How It Works**
+
+1. **Image Upload**: Photos uploaded to temporary Firebase Storage
+2. **AI Analysis**: OpenAI Vision API analyzes image against report description
+3. **Verification**: AI determines if photo matches reported condition
+4. **Feedback**: Users receive detailed feedback and confidence scores
+5. **Storage**: Verified photos moved to permanent storage, others deleted
+
+### **Supported Report Types**
+
+- **Court Conditions**: crowded, empty, partially occupied
+- **Surface Issues**: slippery floor, wet court, damaged surface
+- **Equipment Problems**: broken hoop, missing net, damaged backboard
+- **Environmental**: poor lighting, court closed, no lighting
+- **Cleanliness**: dirty court, trash on court, well-maintained
+
+### **AI Verification Features**
+
+- **Basketball Court Detection**: Ensures photos show actual basketball courts
+- **Condition Matching**: Verifies reported conditions are visible
+- **Confidence Scoring**: Provides 0-100% confidence ratings
+- **Detailed Feedback**: Explains verification decisions to users
+- **Error Handling**: Graceful degradation when AI is unavailable
+
+### **Cost Optimization**
+
+- **Request Deduplication**: Prevents duplicate API calls
+- **Rate Limiting**: 20 requests/minute, 100 requests/hour
+- **Image Compression**: Automatic compression before analysis
+- **Smart Caching**: Temporary storage with automatic cleanup
+
+## 🏆 Gamification System
+
+### **Point Structure**
+- **Report Submission**: 10 base points
+- **Report Verification**: 15 base points
+- **AI Verification Bonus**: +5 points per verified photo
+- **Game Creation**: 10 points
+- **Game Participation**: 5 points
+
+### **Community Benefits**
+- Encourages accurate reporting
+- Rewards quality photo submissions
+- Builds trust through AI verification
+- Promotes active community participation
+
+## 🔧 Configuration
+
+### **Firebase Setup**
+1. Create Firebase project with Firestore, Storage, Authentication
+2. Enable Google sign-in provider
+3. Configure security rules for collections:
+   - `basketballCourts/{courtId}/reports/{reportId}`
+   - `basketballCourts/{courtId}/reports/{reportId}/verifications/{verificationId}`
+   - `userProfiles/{userId}`
+
+### **OpenAI API Setup**
+1. Get API key from OpenAI platform
+2. Add to environment variables
+3. Monitor usage and costs in OpenAI dashboard
+4. Adjust rate limits in `aiVisionService.ts` if needed
+
+### **Google Maps Integration**
+1. Enable Maps SDK and Places API
+2. Configure API keys for iOS/Android
+3. Set up billing account for production use
+
+## 📱 Platform-Specific Features
+
+### **iOS**
+- Native Maps integration with custom markers
+- Background location permissions for geofencing
+- Push notifications for court events
+
+### **Android** 
+- Google Maps integration with clustering
+- Background location with Android 12+ optimizations
+- Material Design 3 components
+
+## 🚢 Deployment
+
+### **Expo Application Services (EAS)**
+```bash
+# Install EAS CLI
+npm install -g eas-cli
+
+# Configure project
+eas build:configure
+
+# Build for production
+eas build --platform all --profile production
+
+# Submit to app stores
+eas submit --platform all
 ```
 
----
+### **Environment Variables for Production**
+- Set all `EXPO_PUBLIC_*` variables in EAS secrets
+- Configure different Firebase projects for staging/production
+- Monitor OpenAI API usage and set billing alerts
 
-#### 4. Simulate Leaving the Court
+## 🔒 Security & Privacy
 
-```text
-1. Change your emulator’s location to a different coordinate (outside the geofence).
+### **Data Protection**
+- User photos stored securely in Firebase Storage
+- Temporary images automatically deleted after verification
+- No personal data shared with OpenAI API
 
-   Example:
-   Latitude: 1.3521
-   Longitude: 103.8198
+### **API Security**
+- Rate limiting prevents API abuse
+- Request deduplication reduces costs
+- Graceful degradation maintains functionality
 
-   Or via ADB:
-   adb emu geo fix 103.8198 1.3521
+### **User Privacy**
+- Location data used only for geofencing
+- Photos analyzed locally before API transmission
+- User consent required for all data collection
 
-2. Wait 30–60 seconds.
-3. The live count for VP Sheltered Basketball Court should decrease by 1.
+## 📊 Monitoring & Analytics
 
-🔄 If the count does not update immediately, press the back button and re-select the court.
-```
+### **Performance Metrics**
+- AI verification success rates
+- API response times and error rates
+- User engagement with verified reports
+- Point distribution and gamification effectiveness
 
----
+### **Cost Monitoring**
+- OpenAI API usage and costs
+- Firebase Storage and Firestore usage
+- Real-time alerts for budget overruns
 
-### ✅ Notes
+## 🤝 Contributing
 
-- Ensure location permissions are **granted** for the app on your device/emulator.
-- Firestore’s real-time listener will sync the updated count as soon as the geofence event is triggered.
-- You can verify updates in **Firebase Console → Firestore → courts/{courtId} → currentCount**.
+1. Fork the repository
+2. Create feature branch (`git checkout -b feature/ai-enhancement`)
+3. Implement changes with tests
+4. Update documentation
+5. Submit pull request with detailed description
 
-> 💡 Tip: Use `adb emu geo fix <longitude> <latitude>` for fast GPS testing in emulators.
+### **Development Guidelines**
+- Follow TypeScript best practices
+- Write comprehensive error handling
+- Include unit tests for AI verification logic
+- Update README for new features
 
----
+## 📄 License
 
-## 🛠️ Project Structure
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-```
-SingaSport/
-├── .expo/                          # Expo configuration files
-├── .git/                           # Git repository files
-├── .vscode/                        # VS Code settings
-├── android/                        # Android native code
-│   ├── app/
-│   │   ├── build.gradle
-│   │   ├── debug.keystore
-│   │   └── src/
-│   └── ...
-├── ios/                            # iOS native code
-│   ├── Podfile
-│   ├── SingaSport/
-│   │   ├── AppDelegate.swift
-│   │   ├── Images.xcassets/
-│   │   └── ...
-│   └── SingaSport.xcodeproj/
-├── app/                            # App screens (Expo Router)
-│   ├── _layout.tsx                 # Root layout
-│   ├── index.tsx                   # Landing/redirect page
-│   ├── (tabs)/                     # Tab navigation screens
-│   │   ├── _layout.tsx             # Tab layout
-│   │   ├── main.tsx                # Map tab (main screen)
-│   │   ├── two.tsx                 # Contribute tab (game scheduling)
-│   │   └── three.tsx               # Profile tab
-│   ├── auth/                       # Authentication screens
-│   │   ├── login.tsx
-│   │   ├── signup.tsx
-│   │   └── complete-profile.tsx
-│   ├── courts/                     # Court-related screens
-│   │   ├── search.tsx
-│   │   ├── court-info.tsx
-│   │   └── report-page.tsx
-│   └── profile/                    # Profile management
-│       └── edit-profile.tsx
-├── src/                            # Source code
-│   ├── components/                 # Reusable React components
-│   │   ├── __tests__/
-│   │   ├── CreateGameModal.tsx     # Game creation modal
-│   │   ├── EditScreenInfo.tsx
-│   │   ├── ExternalLink.tsx
-│   │   ├── StyledText.tsx
-│   │   ├── Themed.tsx
-│   │   ├── useClientOnlyValue.ts
-│   │   ├── useColorScheme.ts
-│   │   └── index.ts
-│   ├── services/                   # Business logic & API services
-│   │   ├── FirebaseConfig.ts       # Firebase configuration
-│   │   ├── gameService.ts          # Game scheduling service
-│   │   ├── writeToFB.js           # Firebase write utilities
-│   │   └── index.ts
-│   ├── constants/                  # App constants
-│   │   ├── Colors.ts
-│   │   └── index.ts
-│   ├── hooks/                      # Custom React hooks
-│   │   └── index.ts
-│   ├── types/                      # TypeScript type definitions
-│   │   └── index.ts
-│   ├── utils/                      # Utility functions
-│   │   ├── userService.ts
-│   │   └── index.ts
-│   └── lib/                        # External libraries
-│       └── target.js
-├── assets/                         # Static assets
-│   ├── fonts/
-│   │   └── SpaceMono-Regular.ttf
-│   └── images/
-│       ├── adaptive-icon.png
-│       ├── favicon.png
-│       ├── icon.png
-│       └── splash-icon.png
+## 🙏 Acknowledgments
 
-├── types/                          # Global type definitions
-│   └── env.d.ts
-├── node_modules/                   # Dependencies
-├── .gitattributes                  # Git attributes
-├── .gitignore                      # Git ignore rules
-├── app.json                        # Expo app configuration
-├── babel.config.js                 # Babel configuration
-├── eas.json                        # Expo Application Services config
-├── expo-env.d.ts                   # Expo environment types
-├── metro.config.js                 # Metro bundler configuration
-├── package.json                    # Dependencies and scripts
-├── package-lock.json               # Locked dependency versions
-├── README.md                       # Project documentation
-└── tsconfig.json                   # TypeScript configuration
-```
+- **OpenAI** for GPT-4V API powering our verification system
+- **Firebase** for reliable backend infrastructure
+- **Expo** for React Native development platform
+- **Singapore Sports Community** for inspiration and feedback
 
 ---
 
-## 🏗️ Architecture
+**Built with ❤️ for the Singapore basketball community**
 
-### Tech Stack
-- **Frontend**: React Native with Expo Router
-- **Backend**: Firebase Firestore (NoSQL database)
-- **Authentication**: Firebase Auth
-- **Navigation**: Expo Router with file-based routing
-- **State Management**: React hooks (useState, useEffect)
-- **Real-time Updates**: Firestore real-time listeners
-- **Maps**: React Native Maps with custom markers
-- **UI Components**: Custom components with React Native
-
-### Key Features
-- 🗺️ **Interactive Map**: Real-time basketball court locations across Singapore
-- 👥 **Live Crowd Data**: Real-time people counting at courts
-- 🏀 **Game Scheduling**: Create and join basketball games
-- 📱 **Court Discovery**: Search and filter courts by location and amenities
-- 👤 **User Profiles**: Authentication and profile management
-- 📊 **Court Reports**: Report issues and maintenance needs
-- 🔄 **Real-time Updates**: Live data synchronization across all users
-- 🏆 **Gamification System**: Points-based rewards for community contributions
-
-### Gamification System
-The app includes a points-based gamification system to encourage user engagement and community contributions:
-
-#### Points Earning
-- **Game Creation**: +10 points for creating a new basketball game
-- **Game Joining**: +5 points for joining a basketball game
-- **Report Submission**: +20 points for submitting a court issue report
-- **Report Verification**: +15 points for uploading verification photos
-
-#### Points Display
-- Points are prominently displayed in the user profile
-- Real-time updates when points are earned
-- Visual breakdown of how to earn points
-
-#### Technical Implementation
-- Points are stored in the user's Firestore document
-- Atomic increments prevent race conditions
-- Automatic migration for existing users
-- Real-time synchronization across the app
-
-### App Structure
-- **Map Tab** (`main.tsx`): Interactive map with court locations and real-time data
-- **Contribute Tab** (`two.tsx`): Basketball game scheduling and community features
-- **Profile Tab** (`three.tsx`): User profile and account management
-- **Authentication Flow**: Login, signup, and profile completion
-- **Court Details**: Detailed court information, reports, and game schedules
-
----
-
-## 🔧 Key Services
-
-### GameService (`src/services/gameService.ts`)
-Handles all basketball game scheduling functionality:
-- Create and manage game schedules
-- Real-time game updates via Firestore listeners
-- RSVP system for joining/leaving games
-- Game filtering and search capabilities
-
-### Firebase Configuration (`src/services/FirebaseConfig.ts`)
-- Firestore database connection
-- Authentication setup
-- Real-time listener configuration
-
----
-
-## 📱 Screens Overview
-
-### Main Navigation Tabs
-1. **Map** - Interactive court map with real-time data
-2. **Contribute** - Game scheduling and community features  
-3. **Profile** - User account and settings
-
-### Authentication Screens
-- **Login** - User authentication
-- **Signup** - New user registration
-- **Complete Profile** - Profile setup after registration
-
-### Court Screens
-- **Search** - Find courts by location and filters
-- **Court Info** - Detailed court information and amenities
-- **Report Page** - Report court issues or maintenance needs
-
----
+For questions, support, or feedback, please open an issue or contact the development team.

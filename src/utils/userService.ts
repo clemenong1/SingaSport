@@ -110,6 +110,10 @@ export const userService = {
     return this.awardPoints(uid, -5);
   },
 
+  async awardBonusPointsForAIVerification(uid: string, bonusPoints: number = 5) {
+    return this.awardPoints(uid, bonusPoints);
+  },
+
   async migrateUserPoints(uid: string) {
     try {
       const userProfile = await this.getUserProfile(uid);

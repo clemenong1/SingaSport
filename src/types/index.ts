@@ -44,3 +44,85 @@ export interface BasketballCourtExtended extends Court {
   geohash?: string;
   openingHours?: string[] | null;
 }
+
+// AI Verification Types
+export interface AIVerificationRequest {
+  imageUrl: string;
+  reportDescription: string;
+  courtContext?: string;
+}
+
+export interface AIVerificationResponse {
+  isMatch: boolean;
+  confidence: number;
+  reasoning: string;
+  feedback?: string;
+  timestamp: string;
+  promptVersion: string;
+}
+
+export interface AIVerificationError {
+  code: 'NETWORK_ERROR' | 'API_ERROR' | 'RATE_LIMIT' | 'INVALID_IMAGE' | 'PROCESSING_ERROR';
+  message: string;
+  retryable: boolean;
+  retryAfter?: number;
+}
+
+export interface ImageUploadStatus {
+  phase: 'uploading' | 'analyzing' | 'verified' | 'failed';
+  progress: number;
+  message: string;
+  aiVerification?: AIVerificationResponse;
+  error?: AIVerificationError;
+}
+
+export interface TempImageData {
+  uri: string;
+  id: string;
+  tempStorageUrl?: string;
+  permanentStorageUrl?: string;
+  aiVerified?: boolean;
+  verificationResponse?: AIVerificationResponse;
+}
+
+// Enhanced existing interfaces
+export interface Report {
+  id: string;
+  courtId: string;
+  courtName: string;
+  description: string;
+  user: string;
+  userName: string;
+  reportedAt: any;
+  imageCount: number;
+  photoUrls?: string[];
+  status: 'open' | 'investigating' | 'resolved';
+  aiVerificationStatus?: 'pending' | 'verified' | 'failed';
+  verificationDetails?: AIVerificationResponse[];
+}
+
+export interface Verification {
+  id: string;
+  verifierId: string;
+  photoUrl: string;
+  timestamp: any;
+  aiVerified: boolean;
+  aiVerificationResponse?: AIVerificationResponse;
+  pointsAwarded?: boolean;
+}
+
+// Configuration
+export interface AIServiceConfig {
+  apiKey: string;
+  model: string;
+  maxRetries: number;
+  retryDelay: number;
+  rateLimit: {
+    requestsPerMinute: number;
+    requestsPerHour: number;
+  };
+  costOptimization: {
+    imageCompressionQuality: number;
+    maxImageSize: number;
+  };
+}

@@ -484,6 +484,8 @@ export default function ReportsListScreen() {
                     <VerifyReportComponent 
                       courtId={court.place_id}
                       reportId={report.id}
+                      reportDescription={report.description}
+                      courtName={court.name}
                     />
                   </View>
                 )}
