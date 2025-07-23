@@ -185,7 +185,7 @@ BASKETBALL COURT ELEMENTS TO IDENTIFY:
 - Court surface (hardwood, concrete, asphalt, painted lines)
 - Basketball hoops, nets, backboards
 - Court markings (three-point line, free-throw line, center circle)
-- Surrounding facilities (bleachers, lighting, fencing)
+- Surrounding facilities (benches, lighting, fencing)
 
 CONDITION CATEGORIES TO EVALUATE:
 - CROWDING: "crowded" (6+ people), "busy" (3-5 people), "empty" (0-1 people), "partially occupied" (2-4 people)
@@ -193,12 +193,14 @@ CONDITION CATEGORIES TO EVALUATE:
 - EQUIPMENT: "broken hoop", "missing net", "damaged backboard", "working condition"
 - ENVIRONMENT: "poor lighting", "good lighting", "court closed", "open", "indoor", "outdoor"
 - MAINTENANCE: "trash on court", "clean court", "needs cleaning", "well-maintained"
+- OCCUPANCY: "tentages on court", "no tents on court", "special event at court", "no special event at court", "special event banner at court", "no special event banner at court"
 
 ANALYSIS CRITERIA:
 1. Does the image clearly show a basketball court?
 2. Are the reported conditions visible and accurate?
 3. Is the evidence clear and unambiguous?
 4. Does the image quality allow for proper assessment?
+5. Is the time of day and weather conditions considered?
 
 RESPOND IN THIS EXACT JSON FORMAT:
 {
@@ -209,11 +211,12 @@ RESPOND IN THIS EXACT JSON FORMAT:
 }
 
 IMPORTANT:
-- Be strict: only return isMatch=true if the image clearly shows the reported condition
+- Return isMatch=true if the image clearly shows the reported condition
 - If the image is unclear, blurry, or doesn't show a basketball court, return isMatch=false
 - For crowding reports, count visible people accurately
 - For surface conditions, look for clear visual evidence
 - Consider lighting conditions and image quality in your assessment
+- Consider the time of day and weather conditions in your assessment
 - Provide specific details in your reasoning`;
 
     return basePrompt;
