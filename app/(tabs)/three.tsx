@@ -201,6 +201,9 @@ export default function ProfileScreen() {
               </View>
               <Text style={styles.pointsItemText}>Report Issue: +20 points</Text>
             </View>
+            <View style={styles.comingSoon}>
+              <Text style={styles.comingSoonText}>Redeem Rewards with Points! (Coming Soon!)</Text>
+            </View>
           </View>
         </View>
       </View>
@@ -361,6 +364,25 @@ const styles = StyleSheet.create({
   signOutButtonText: {
     color: '#fff',
     fontSize: 16,
+    fontWeight: '600',
+    marginLeft: 8,
+  },
+  comingSoon: {
+    backgroundColor: '#808080',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 15,
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  comingSoonText: {
+    color: '#EDE7E5',
+    fontSize: 14,
     fontWeight: '600',
     marginLeft: 8,
   },

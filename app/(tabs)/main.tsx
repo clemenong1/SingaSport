@@ -599,6 +599,16 @@ export default function MapScreen(): React.JSX.Element {
 
   return (
     <View style={styles.container}>
+      {/* Chatbot Button */}
+      <TouchableOpacity
+        style={styles.chatbotButton}
+        onPress={() => router.push('../SingaChat')}
+        activeOpacity={0.7}
+      >
+        <Ionicons name="chatbubble-ellipses" size={28} color="#007BFF" />
+        <Text style={styles.chatbotButtonText}>Singa</Text>
+      </TouchableOpacity>
+      {/* Search Bar */}
       <TouchableOpacity
         style={styles.search}
         onPress={() => router.push('/courts/search')}
@@ -709,6 +719,29 @@ export default function MapScreen(): React.JSX.Element {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
+  chatbotButton: {
+    position: 'absolute',
+    zIndex: 3,
+    top: 60,
+    left: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  chatbotButtonText: {
+    marginLeft: 6,
+    color: '#007BFF',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
   search: {
     position: 'absolute',
     zIndex: 2,
