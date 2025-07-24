@@ -7,7 +7,16 @@
     "android": "expo run:android",
     "ios": "expo run:ios",
     "web": "expo start --web",
-    "test": "jest --watchAll"
+    "test": "jest --watchAll",
+    "test:all": "node scripts/run-all-tests.js",
+    "test:auth": "node scripts/run-all-tests.js 1",
+    "test:search": "node scripts/run-all-tests.js 2", 
+    "test:geofencing": "node scripts/run-all-tests.js 3",
+    "test:reports": "node scripts/run-all-tests.js 4",
+    "test:games": "node scripts/run-all-tests.js 5",
+    "test:gamification": "node scripts/run-all-tests.js 6",
+    "test:chatbot": "node scripts/run-all-tests.js 7",
+    "test:ci": "jest --coverage --watchAll=false --verbose"
   },
   "jest": {
     "preset": "jest-expo"
