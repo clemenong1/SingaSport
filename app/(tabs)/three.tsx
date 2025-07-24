@@ -164,7 +164,7 @@ export default function ProfileScreen() {
 
       {/* Points Section */}
       <View style={styles.infoSection}>
-        <Text style={styles.sectionTitle}>Gamification</Text>
+        <Text style={styles.sectionTitle}>Check your progress!</Text>
         <View style={styles.pointsCard}>
           <View style={styles.pointsHeader}>
             <View style={styles.trophyContainer}>

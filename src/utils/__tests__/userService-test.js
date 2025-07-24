@@ -80,7 +80,12 @@ describe('UserService Points System', () => {
       exists: () => false
     });
 
+    // Mock console.log to prevent "Cannot log after tests are done" error
+    const consoleSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
+    
     await userService.awardPoints('test-uid', 10);
+    
+    consoleSpy.mockRestore();
 
     expect(mockDoc).toHaveBeenCalledWith({}, 'users', 'test-uid');
     expect(mockUpdateDoc).toHaveBeenCalledWith(
