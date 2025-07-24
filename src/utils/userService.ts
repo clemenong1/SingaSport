@@ -7,7 +7,7 @@ export interface UserProfile {
   email: string;
   country: string;
   phoneNumber?: string | null;
-  profileImageUrl?: string;
+  profileImageUrl?: string | null;
   points: number;
   createdAt: string;
   updatedAt: string;
@@ -16,9 +16,17 @@ export interface UserProfile {
 export const userService = {
   async createUserProfile(uid: string, profileData: Omit<UserProfile, 'uid' | 'createdAt' | 'updatedAt' | 'points'>) {
     const timestamp = new Date().toISOString();
+    
+    // Handle optional fields properly - convert undefined to null for Firebase compatibility
+    const cleanedProfileData = {
+      ...profileData,
+      phoneNumber: profileData.phoneNumber === undefined ? null : profileData.phoneNumber,
+      profileImageUrl: profileData.profileImageUrl === undefined ? null : profileData.profileImageUrl
+    };
+    
     const userProfile: UserProfile = {
       uid,
-      ...profileData,
+      ...cleanedProfileData,
       points: 0, // Initialize with 0 points
       createdAt: timestamp,
       updatedAt: timestamp
