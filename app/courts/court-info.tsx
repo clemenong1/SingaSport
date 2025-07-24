@@ -2,25 +2,28 @@ import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
-  ScrollView,
   StyleSheet,
+  SafeAreaView,
+  ScrollView,
   TouchableOpacity,
   Image,
-  Dimensions,
+  FlatList,
   Alert,
   ActivityIndicator,
-  FlatList,
   Linking,
   Platform,
+  Modal,
+  Dimensions,
+  StatusBar,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import * as Location from 'expo-location';
-import { isCourtCurrentlyOpen } from '../../src/utils';
-import { db } from '../../src/services/FirebaseConfig';
-import { collection, query, orderBy, onSnapshot, Timestamp } from 'firebase/firestore';
+import * as ImagePicker from 'expo-image-picker';
+import { courtPhotoService, CourtPhoto, UploadProgress } from '../../src/services/courtPhotoService';
+import { collection, getDocs, query, orderBy, limit } from 'firebase/firestore';
+import { db, auth } from '../../src/services/FirebaseConfig';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
@@ -38,25 +41,12 @@ interface Court {
   openingHours?: string[] | null;
 }
 
-interface CourtPhoto {
-  id: string;
-  uri: string;
-  caption?: string;
-  uploadedBy?: string;
-  uploadedAt?: string;
-}
-
 interface Report {
   id: string;
-  courtId: string;
-  courtName: string;
   description: string;
-  user: string;
-  userName: string;
   reportedAt: any;
-  imageCount: number;
-  photoUrls?: string[];
   status: 'open' | 'investigating' | 'resolved';
+  courtId: string;
 }
 
 export default function CourtInfoScreen() {
@@ -64,10 +54,17 @@ export default function CourtInfoScreen() {
   const [court, setCourt] = useState<Court | null>(null);
   const [photos, setPhotos] = useState<CourtPhoto[]>([]);
   const [loading, setLoading] = useState(true);
+  const [photoLoading, setPhotoLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<UploadProgress>({ bytesTransferred: 0, totalBytes: 0, percentage: 0 });
   const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   const [distance, setDistance] = useState<string>('');
   const [reports, setReports] = useState<Report[]>([]);
   const [loadingReports, setLoadingReports] = useState(false);
+
+  // Photo viewer state
+  const [photoViewerVisible, setPhotoViewerVisible] = useState(false);
+  const [selectedPhotoIndex, setSelectedPhotoIndex] = useState(0);
 
   useEffect(() => {
     initializeCourtInfo();
@@ -75,11 +72,11 @@ export default function CourtInfoScreen() {
 
   const initializeCourtInfo = async () => {
     try {
-
       if (params.courtData) {
         const courtData = JSON.parse(params.courtData as string) as Court;
         setCourt(courtData);
 
+        // Get user location for distance calculation
         const { status } = await Location.requestForegroundPermissionsAsync();
         if (status === 'granted') {
           const location = await Location.getCurrentPositionAsync({});
@@ -97,8 +94,10 @@ export default function CourtInfoScreen() {
           setDistance(dist.toFixed(2));
         }
 
-        loadCourtPhotos(courtData.place_id);
+        // Load court photos from Firestore
+        await loadCourtPhotos(courtData.place_id);
 
+        // Load court reports
         loadCourtReports(courtData.place_id);
       }
     } catch (error) {
@@ -111,7 +110,7 @@ export default function CourtInfoScreen() {
 
   const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
     const toRad = (value: number) => (value * Math.PI) / 180;
-    const R = 6371;
+    const R = 6371; // Earth's radius in kilometers
     const dLat = toRad(lat2 - lat1);
     const dLon = toRad(lon2 - lon1);
     const a =
@@ -122,58 +121,193 @@ export default function CourtInfoScreen() {
     return R * c;
   };
 
-  const loadCourtPhotos = (courtId: string) => {
-
-    const samplePhotos: CourtPhoto[] = [
-      {
-        id: '1',
-        uri: 'https://images.unsplash.com/photo-1546519638-68e109498ffc?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80',
-        caption: 'Main court view',
-        uploadedBy: 'User123',
-        uploadedAt: '2024-01-15'
-      },
-      {
-        id: '2',
-        uri: 'https://images.unsplash.com/photo-1574623452334-1e0ac2b3ccb4?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80',
-        caption: 'Court from another angle',
-        uploadedBy: 'Player456',
-        uploadedAt: '2024-01-12'
-      }
-    ];
-    setPhotos(samplePhotos);
+  const navigatePhoto = (direction: 'prev' | 'next') => {
+    if (direction === 'prev') {
+      setSelectedPhotoIndex((prev) => (prev > 0 ? prev - 1 : photos.length - 1));
+    } else {
+      setSelectedPhotoIndex((prev) => (prev < photos.length - 1 ? prev + 1 : 0));
+    }
   };
 
-  const loadCourtReports = (courtId: string) => {
-    setLoadingReports(true);
-    try {
-      const reportsRef = collection(db, 'basketballCourts', courtId, 'reports');
-      const reportsQuery = query(reportsRef, orderBy('reportedAt', 'desc'));
+  const sortPhotosByDate = (photos: CourtPhoto[]): CourtPhoto[] => {
+    return photos.sort((a, b) => {
+      const dateA = a.uploadedAt?.toDate ? a.uploadedAt.toDate() : new Date(a.uploadedAt || 0);
+      const dateB = b.uploadedAt?.toDate ? b.uploadedAt.toDate() : new Date(b.uploadedAt || 0);
+      return dateB.getTime() - dateA.getTime(); // Most recent first
+    });
+  };
 
-      const unsubscribe = onSnapshot(reportsQuery, (snapshot) => {
-        const reportsData: Report[] = [];
-        snapshot.forEach((doc) => {
-          reportsData.push({
-            id: doc.id,
-            ...doc.data(),
-          } as Report);
+  const loadCourtPhotos = async (courtId: string) => {
+    try {
+      setPhotoLoading(true);
+      const userPhotos = await courtPhotoService.loadCourtPhotos(courtId, 10);
+      
+      // Sort photos by upload date (most recent first) as additional safety measure
+      const sortedPhotos = sortPhotosByDate(userPhotos);
+      
+      setPhotos(sortedPhotos);
+    } catch (error) {
+      console.error('Error loading court photos:', error);
+      // If no user photos, show placeholder message instead of generic photos
+      setPhotos([]);
+    } finally {
+      setPhotoLoading(false);
+    }
+  };
+
+  const loadCourtReports = async (courtId: string) => {
+    try {
+      setLoadingReports(true);
+      const reportsRef = collection(db, 'basketballCourts', courtId, 'reports');
+      const q = query(reportsRef, orderBy('reportedAt', 'desc'), limit(3));
+      const querySnapshot = await getDocs(q);
+
+      const reportsData: Report[] = [];
+      querySnapshot.forEach((doc) => {
+        const data = doc.data();
+        reportsData.push({
+          id: doc.id,
+          description: data.description,
+          reportedAt: data.reportedAt,
+          status: data.status || 'open',
+          courtId: courtId,
         });
-        setReports(reportsData);
-        setLoadingReports(false);
-      }, (error) => {
-        console.error('Error fetching reports:', error);
-        setLoadingReports(false);
       });
 
-      return unsubscribe;
+      setReports(reportsData);
     } catch (error) {
-      console.error('Error setting up reports listener:', error);
+      console.error('Error loading reports:', error);
+    } finally {
       setLoadingReports(false);
+    }
+  };
+
+  const showImagePickerOptions = () => {
+    if (!auth.currentUser) {
+      Alert.alert('Authentication Required', 'Please log in to upload photos.');
+      return;
+    }
+
+    Alert.alert(
+      'Add Photo',
+      'Choose how you want to add a photo of this court',
+      [
+        { text: 'Camera', onPress: openCamera },
+        { text: 'Photo Library', onPress: openPhotoLibrary },
+        { text: 'Cancel', style: 'cancel' },
+      ],
+      { cancelable: true }
+    );
+  };
+
+  const requestPermissions = async (): Promise<boolean> => {
+    const cameraPermission = await ImagePicker.requestCameraPermissionsAsync();
+    const mediaLibraryPermission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    
+    return cameraPermission.status === 'granted' && mediaLibraryPermission.status === 'granted';
+  };
+
+  const openCamera = async () => {
+    try {
+      const hasPermission = await requestPermissions();
+      if (!hasPermission) {
+        Alert.alert('Permission Denied', 'Camera and photo library permissions are required.');
+        return;
+      }
+
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets[0]) {
+        await uploadPhoto(result.assets[0].uri);
+      }
+    } catch (error) {
+      console.error('Error opening camera:', error);
+      Alert.alert('Error', 'Failed to open camera. Please try again.');
+    }
+  };
+
+  const openPhotoLibrary = async () => {
+    try {
+      const hasPermission = await requestPermissions();
+      if (!hasPermission) {
+        Alert.alert('Permission Denied', 'Photo library permission is required.');
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets[0]) {
+        await uploadPhoto(result.assets[0].uri);
+      }
+    } catch (error) {
+      console.error('Error opening photo library:', error);
+      Alert.alert('Error', 'Failed to open photo library. Please try again.');
+    }
+  };
+
+  const uploadPhoto = async (imageUri: string) => {
+    if (!court) return;
+
+    setUploading(true);
+    setUploadProgress({ bytesTransferred: 0, totalBytes: 0, percentage: 0 });
+
+    try {
+      const uploadedPhoto = await courtPhotoService.uploadCourtPhoto(
+        imageUri,
+        court.place_id,
+        '', // No caption for now
+        (progress) => {
+          setUploadProgress(progress);
+        }
+      );
+
+      // Add the new photo and re-sort to ensure proper ordering
+      setPhotos((prevPhotos) => {
+        const updatedPhotos = [uploadedPhoto, ...prevPhotos];
+        return sortPhotosByDate(updatedPhotos);
+      });
+
+      Alert.alert('Success', 'Photo uploaded successfully! Thank you for contributing to the community.');
+    } catch (error: any) {
+      console.error('Error uploading photo:', error);
+      Alert.alert('Upload Failed', error.message || 'Failed to upload photo. Please try again.');
+    } finally {
+      setUploading(false);
+      setUploadProgress({ bytesTransferred: 0, totalBytes: 0, percentage: 0 });
+    }
+  };
+
+  const openPhotoViewer = (index: number) => {
+    setSelectedPhotoIndex(index);
+    setPhotoViewerVisible(true);
+  };
+
+  const closePhotoViewer = () => {
+    setPhotoViewerVisible(false);
+  };
+
+  const navigateToReport = () => {
+    if (court) {
+      router.push({
+        pathname: '/courts/report-page',
+        params: { courtData: JSON.stringify(court) }
+      });
     }
   };
 
   const openInMaps = () => {
     if (!court) return;
-
+    
     const scheme = Platform.select({ ios: 'maps:0,0?q=', android: 'geo:0,0?q=' });
     const latLng = `${court.latitude},${court.longitude}`;
     const label = court.name;
@@ -185,17 +319,6 @@ export default function CourtInfoScreen() {
     if (url) {
       Linking.openURL(url);
     }
-  };
-
-  const navigateToReport = () => {
-    if (!court) return;
-
-    router.push({
-      pathname: '/courts/report-page' as any,
-      params: {
-        courtData: JSON.stringify(court)
-      }
-    });
   };
 
   const getOpenStatusColor = (isOpen: boolean | null) => {
@@ -230,7 +353,7 @@ export default function CourtInfoScreen() {
     if (!reportedAt) return 'Unknown date';
 
     try {
-
+      // Handle Firestore timestamp
       const date = reportedAt.toDate ? reportedAt.toDate() : new Date(reportedAt);
       const now = new Date();
       const diffInMs = now.getTime() - date.getTime();
@@ -251,19 +374,32 @@ export default function CourtInfoScreen() {
     }
   };
 
-  const renderPhoto = ({ item }: { item: CourtPhoto }) => (
-    <View style={styles.photoContainer}>
-      <Image source={{ uri: item.uri }} style={styles.photo} />
-      {item.caption && (
+  const renderPhoto = ({ item, index }: { item: CourtPhoto; index: number }) => (
+    <TouchableOpacity onPress={() => openPhotoViewer(index)}>
+      <View style={styles.photoContainer}>
+        <Image source={{ uri: item.uri }} style={styles.photo} />
+        {item.aiVerified && (
+          <View style={styles.verificationBadge}>
+            <Ionicons name="checkmark-circle" size={12} color="#4CAF50" />
+            <Text style={styles.verificationText}>AI Verified</Text>
+          </View>
+        )}
         <View style={styles.photoCaption}>
-          <Text style={styles.photoCaptionText}>{item.caption}</Text>
+          {item.uploadedByName && item.uploadedByName !== 'Anonymous User' && item.uploadedByName !== 'Anonymous' && (
+            <Text style={styles.photoCaptionText}>
+              By {item.uploadedByName}
+            </Text>
+          )}
+          <Text style={styles.photoDateText}>
+            {courtPhotoService.formatUploadDate(item.uploadedAt)}
+          </Text>
         </View>
-      )}
-    </View>
+      </View>
+    </TouchableOpacity>
   );
 
   const renderOpeningHours = () => {
-    if (!court?.openingHours || !Array.isArray(court.openingHours)) {
+    if (!court?.openingHours || court.openingHours.length === 0) {
       return (
         <View style={styles.infoRow}>
           <Ionicons name="time-outline" size={20} color="#666" />
@@ -273,16 +409,17 @@ export default function CourtInfoScreen() {
     }
 
     return (
-      <View style={styles.openingHoursContainer}>
-        <View style={styles.infoRow}>
-          <Ionicons name="time-outline" size={20} color="#666" />
-          <Text style={styles.infoLabel}>Opening Hours</Text>
+      <View style={styles.infoRow}>
+        <Ionicons name="time-outline" size={20} color="#666" />
+        <View style={styles.openingHoursContainer}>
+          <Text style={styles.infoLabel}>Opening Hours:</Text>
+          {court.openingHours.slice(0, 3).map((hours, index) => (
+            <Text key={index} style={styles.openingHoursText}>{hours}</Text>
+          ))}
+          {court.openingHours.length > 3 && (
+            <Text style={styles.openingHoursText}>...and {court.openingHours.length - 3} more</Text>
+          )}
         </View>
-        {court.openingHours.map((hours, index) => (
-          <Text key={index} style={styles.openingHoursText}>
-            {hours}
-          </Text>
-        ))}
       </View>
     );
   };
@@ -302,9 +439,9 @@ export default function CourtInfoScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.errorContainer}>
-          <Ionicons name="alert-circle-outline" size={64} color="#F44336" />
-          <Text style={styles.errorText}>Court information not available</Text>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+          <Ionicons name="alert-circle-outline" size={48} color="#FF6B6B" />
+          <Text style={styles.errorText}>Court not found</Text>
+          <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
             <Text style={styles.backButtonText}>Go Back</Text>
           </TouchableOpacity>
         </View>
@@ -353,34 +490,31 @@ export default function CourtInfoScreen() {
               description={court.address}
             />
           </MapView>
-
         </View>
 
         {/* Quick Stats */}
         <View style={styles.quickStats}>
           <View style={styles.statItem}>
-            <Ionicons name="star" size={20} color="#FFB400" />
-            <Text style={styles.statValue}>
-              {court.rating ? court.rating.toFixed(1) : 'N/A'}
-            </Text>
-            <Text style={styles.statLabel}>Rating</Text>
-          </View>
-
-          <View style={styles.statItem}>
             <Ionicons name="people" size={20} color="#007AFF" />
-            <Text style={styles.statValue}>
-              {court.peopleNumber || 0}
-            </Text>
-            <Text style={styles.statLabel}>People</Text>
+            <Text style={styles.statNumber}>{court.peopleNumber || 0}</Text>
+            <Text style={styles.statLabel}>Playing Now</Text>
           </View>
-
-          <View style={styles.statItem}>
-            <Ionicons name="location" size={20} color="#34C759" />
-            <Text style={styles.statValue}>
-              {distance ? `${distance} km` : 'N/A'}
-            </Text>
-            <Text style={styles.statLabel}>Distance</Text>
-          </View>
+          
+          {court.rating && (
+            <View style={styles.statItem}>
+              <Ionicons name="star" size={20} color="#FFD700" />
+              <Text style={styles.statNumber}>{court.rating.toFixed(1)}</Text>
+              <Text style={styles.statLabel}>Rating</Text>
+            </View>
+          )}
+          
+          {distance && (
+            <View style={styles.statItem}>
+              <Ionicons name="location" size={20} color="#4CAF50" />
+              <Text style={styles.statNumber}>{distance}</Text>
+              <Text style={styles.statLabel}>km away</Text>
+            </View>
+          )}
         </View>
 
         {/* Court Information */}
@@ -417,25 +551,110 @@ export default function CourtInfoScreen() {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Photos</Text>
-            <TouchableOpacity style={styles.addPhotoButton}>
-              <Ionicons name="camera-outline" size={20} color="#007AFF" />
-              <Text style={styles.addPhotoText}>Add Photo</Text>
+            <TouchableOpacity 
+              style={[styles.addPhotoButton, uploading && styles.addPhotoButtonDisabled]} 
+              onPress={showImagePickerOptions}
+              disabled={uploading}
+            >
+              <Ionicons 
+                name={uploading ? "hourglass-outline" : "camera-outline"} 
+                size={20} 
+                color={uploading ? "#999" : "#007AFF"} 
+              />
+              <Text style={[styles.addPhotoText, uploading && styles.addPhotoTextDisabled]}>
+                {uploading ? `Uploading ${uploadProgress.percentage}%` : 'Add Photo'}
+              </Text>
             </TouchableOpacity>
           </View>
 
-          {photos.length > 0 ? (
+          {photoLoading ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="small" color="#666" />
+              <Text style={styles.loadingText}>Loading photos...</Text>
+            </View>
+          ) : photos.length > 0 ? (
             <FlatList
               data={photos}
               renderItem={renderPhoto}
               horizontal
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.photosContainer}
+              keyExtractor={(item) => item.id}
             />
           ) : (
             <View style={styles.noPhotosContainer}>
               <Ionicons name="camera-outline" size={48} color="#CCC" />
               <Text style={styles.noPhotosText}>No photos yet</Text>
-              <Text style={styles.noPhotosSubtext}>Be the first to add a photo!</Text>
+              <Text style={styles.noPhotosSubtext}>Be the first to add a photo of this court!</Text>
+            </View>
+          )}
+
+          {uploading && (
+            <View style={styles.uploadProgressContainer}>
+              <View style={styles.uploadProgressBar}>
+                <View 
+                  style={[styles.uploadProgressFill, { width: `${uploadProgress.percentage}%` }]} 
+                />
+              </View>
+              <Text style={styles.uploadProgressText}>
+                Uploading... {uploadProgress.percentage}%
+              </Text>
+            </View>
+          )}
+        </View>
+
+        {/* Recent Reports Section */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Recent Reports</Text>
+          
+          {loadingReports ? (
+            <View style={styles.reportsLoadingContainer}>
+              <ActivityIndicator size="small" color="#666" />
+              <Text style={styles.reportsLoadingText}>Loading reports...</Text>
+            </View>
+          ) : reports.length > 0 ? (
+            <View style={styles.viewReportsButton}>
+              <View style={styles.viewReportsContent}>
+                <View style={styles.viewReportsHeader}>
+                  <View style={styles.viewReportsInfo}>
+                    <Text style={styles.viewReportsTitle}>
+                      {reports.length} Recent Report{reports.length > 1 ? 's' : ''}
+                    </Text>
+                    <Text style={styles.viewReportsSubtitle}>
+                      Latest: {formatReportDate(reports[0]?.reportedAt)}
+                    </Text>
+                  </View>
+                  <View style={styles.reportStatusIndicators}>
+                    {reports.slice(0, 3).map((report, index) => (
+                      <View
+                        key={index}
+                        style={[
+                          styles.reportStatusDot,
+                          { backgroundColor: getReportStatusColor(report.status) }
+                        ]}
+                      />
+                    ))}
+                  </View>
+                </View>
+                
+                <TouchableOpacity 
+                  style={styles.viewAllReportsButton}
+                  onPress={() => router.push({
+                    pathname: '/courts/reports-list',
+                    params: { courtData: JSON.stringify(court) }
+                  })}
+                >
+                  <Text style={styles.viewAllReportsText}>View All Reports</Text>
+                  <Ionicons name="chevron-forward" size={16} color="#007AFF" />
+                </TouchableOpacity>
+              </View>
+            </View>
+          ) : (
+            <View style={styles.comingSoonCard}>
+              <View style={styles.comingSoonItem}>
+                <Ionicons name="checkmark-circle-outline" size={20} color="#4CAF50" />
+                <Text style={styles.comingSoonText}>No recent reports - Court looks good!</Text>
+              </View>
             </View>
           )}
         </View>
@@ -460,83 +679,80 @@ export default function CourtInfoScreen() {
             <Text style={[styles.actionButtonText, styles.secondaryButtonText]}>Share Court</Text>
           </TouchableOpacity>
         </View>
+      </ScrollView>
 
-        {/* Reports Section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Recent Reports</Text>
-          
-          {loadingReports ? (
-            <View style={styles.reportsLoadingContainer}>
-              <ActivityIndicator size="small" color="#666" />
-              <Text style={styles.reportsLoadingText}>Loading reports...</Text>
-            </View>
-          ) : (
-            <TouchableOpacity 
-              style={styles.viewReportsButton}
-              onPress={() => {
-                router.push({
-                  pathname: '/courts/reports-list' as any,
-                  params: {
-                    courtData: JSON.stringify(court)
-                  }
-                });
-              }}
-            >
-              <View style={styles.viewReportsContent}>
-                <View style={styles.viewReportsHeader}>
-                  <Ionicons name="document-text-outline" size={24} color="#333" />
-                  <View style={styles.viewReportsTextContainer}>
-                    <Text style={styles.viewReportsTitle}>
-                      {reports.length === 0 ? 'No Reports' : 
-                       reports.length === 1 ? '1 Report' : 
-                       `${reports.length} Reports`}
-                    </Text>
-                    <Text style={styles.viewReportsSubtitle}>
-                      {reports.length === 0 ? 'This court has no reported issues' :
-                       'Tap to view all court reports and verify them'}
-                    </Text>
-                  </View>
-                  <Ionicons name="chevron-forward" size={20} color="#666" />
-                </View>
-                
-                {reports.length > 0 && (
-                  <View style={styles.latestReportPreview}>
-                    <Text style={styles.latestReportLabel}>Latest:</Text>
-                    <View style={styles.latestReportContent}>
-                      <View style={[styles.reportStatusDot, { backgroundColor: getReportStatusColor(reports[0].status) }]} />
-                      <Text style={styles.latestReportText} numberOfLines={1}>
-                        {reports[0].description}
-                      </Text>
-                      <Text style={styles.latestReportDate}>
-                        {formatReportDate(reports[0].reportedAt)}
-                      </Text>
-                    </View>
-                  </View>
-                )}
-              </View>
+      {/* Photo Viewer Modal */}
+      <Modal
+        visible={photoViewerVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={closePhotoViewer}
+      >
+        <StatusBar hidden />
+        <View style={styles.modalOverlay}>
+          {/* Header with close button and photo counter */}
+          <View style={styles.modalHeader}>
+            <TouchableOpacity style={styles.modalCloseButton} onPress={closePhotoViewer}>
+              <Ionicons name="close" size={28} color="white" />
             </TouchableOpacity>
-          )}
-        </View>
+            <Text style={styles.modalPhotoCounter}>
+              {selectedPhotoIndex + 1} / {photos.length}
+            </Text>
+          </View>
 
-        {/* Future Features Section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Coming Soon</Text>
-          <View style={styles.comingSoonCard}>
-            <View style={styles.comingSoonItem}>
-              <Ionicons name="calendar-outline" size={24} color="#666" />
-              <Text style={styles.comingSoonText}>Court Booking</Text>
-            </View>
-            <View style={styles.comingSoonItem}>
-              <Ionicons name="chatbubbles-outline" size={24} color="#666" />
-              <Text style={styles.comingSoonText}>Player Reviews</Text>
-            </View>
-            <View style={styles.comingSoonItem}>
-              <Ionicons name="fitness-outline" size={24} color="#666" />
-              <Text style={styles.comingSoonText}>Court Conditions</Text>
+          {/* Photo display */}
+          <View style={styles.modalImageContainer}>
+            {photos[selectedPhotoIndex] && (
+              <Image
+                source={{ uri: photos[selectedPhotoIndex].uri }}
+                style={styles.modalImage}
+                resizeMode="contain"
+              />
+            )}
+
+            {/* Navigation buttons (only show if more than one photo) */}
+            {photos.length > 1 && (
+              <>
+                <TouchableOpacity 
+                  style={[styles.modalNavButton, styles.modalNavButtonLeft]} 
+                  onPress={() => navigatePhoto('prev')}
+                >
+                  <Ionicons name="chevron-back" size={30} color="white" />
+                </TouchableOpacity>
+                
+                <TouchableOpacity 
+                  style={[styles.modalNavButton, styles.modalNavButtonRight]} 
+                  onPress={() => navigatePhoto('next')}
+                >
+                  <Ionicons name="chevron-forward" size={30} color="white" />
+                </TouchableOpacity>
+              </>
+            )}
+          </View>
+
+          {/* Photo information */}
+          <View style={styles.modalFooter}>
+            <View style={styles.modalPhotoInfo}>
+              {photos[selectedPhotoIndex]?.aiVerified && (
+                <View style={styles.modalVerificationBadge}>
+                  <Ionicons name="checkmark-circle" size={16} color="#4CAF50" />
+                  <Text style={styles.modalVerificationText}>AI Verified</Text>
+                </View>
+              )}
+              {photos[selectedPhotoIndex]?.uploadedByName && 
+               photos[selectedPhotoIndex]?.uploadedByName !== 'Anonymous User' && 
+               photos[selectedPhotoIndex]?.uploadedByName !== 'Anonymous' && (
+                <Text style={styles.modalPhotoUploader}>
+                  By {photos[selectedPhotoIndex]?.uploadedByName}
+                </Text>
+              )}
+              <Text style={styles.modalPhotoDate}>
+                {photos[selectedPhotoIndex] && courtPhotoService.formatUploadDate(photos[selectedPhotoIndex].uploadedAt)}
+              </Text>
             </View>
           </View>
         </View>
-      </ScrollView>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -550,28 +766,30 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    paddingVertical: 20,
   },
   loadingText: {
-    marginTop: 16,
+    marginTop: 12,
     fontSize: 16,
     color: '#666',
+    textAlign: 'center',
   },
   errorContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 32,
+    paddingHorizontal: 40,
   },
   errorText: {
     fontSize: 18,
     color: '#666',
-    textAlign: 'center',
     marginTop: 16,
-    marginBottom: 32,
+    textAlign: 'center',
   },
   backButton: {
+    marginTop: 20,
     backgroundColor: '#007AFF',
-    paddingHorizontal: 24,
+    paddingHorizontal: 20,
     paddingVertical: 12,
     borderRadius: 8,
   },
@@ -592,6 +810,7 @@ const styles = StyleSheet.create({
   },
   headerButton: {
     padding: 8,
+    width: 40,
   },
   headerTitle: {
     flex: 1,
@@ -599,38 +818,30 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#333',
     textAlign: 'center',
-    marginHorizontal: 16,
   },
   content: {
     flex: 1,
   },
   heroSection: {
-    height: 240,
-    position: 'relative',
+    height: 200,
+    backgroundColor: '#DDD',
   },
   mapView: {
     flex: 1,
   },
-
   quickStats: {
     flexDirection: 'row',
     backgroundColor: 'white',
     paddingVertical: 20,
     paddingHorizontal: 16,
-    marginTop: -20,
-    marginHorizontal: 16,
-    borderRadius: 12,
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E5E5',
   },
   statItem: {
     flex: 1,
     alignItems: 'center',
   },
-  statValue: {
+  statNumber: {
     fontSize: 20,
     fontWeight: 'bold',
     color: '#333',
@@ -639,10 +850,11 @@ const styles = StyleSheet.create({
   statLabel: {
     fontSize: 12,
     color: '#666',
-    marginTop: 2,
+    marginTop: 4,
   },
   section: {
-    margin: 16,
+    marginHorizontal: 16,
+    marginVertical: 20,
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -705,6 +917,12 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginLeft: 4,
   },
+  addPhotoButtonDisabled: {
+    opacity: 0.7,
+  },
+  addPhotoTextDisabled: {
+    color: '#999',
+  },
   photosContainer: {
     paddingVertical: 8,
   },
@@ -712,6 +930,7 @@ const styles = StyleSheet.create({
     marginRight: 12,
     borderRadius: 12,
     overflow: 'hidden',
+    position: 'relative',
   },
   photo: {
     width: 160,
@@ -730,6 +949,30 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 12,
     fontWeight: '500',
+  },
+  photoDateText: {
+    fontSize: 10,
+    color: '#999',
+    marginTop: 2,
+  },
+  verificationBadge: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    backgroundColor: 'rgba(255,255,255,0.9)',
+    borderRadius: 10,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#4CAF50',
+  },
+  verificationText: {
+    fontSize: 10,
+    color: '#4CAF50',
+    fontWeight: '600',
+    marginLeft: 2,
   },
   noPhotosContainer: {
     backgroundColor: 'white',
@@ -751,6 +994,27 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#999',
     marginTop: 4,
+  },
+  uploadProgressContainer: {
+    marginTop: 16,
+    alignItems: 'center',
+  },
+  uploadProgressBar: {
+    width: '80%',
+    height: 8,
+    backgroundColor: '#E0E0E0',
+    borderRadius: 4,
+    overflow: 'hidden',
+  },
+  uploadProgressFill: {
+    height: '100%',
+    backgroundColor: '#007AFF',
+    borderRadius: 4,
+  },
+  uploadProgressText: {
+    marginTop: 8,
+    fontSize: 14,
+    color: '#666',
   },
   actionButton: {
     backgroundColor: '#007AFF',
@@ -805,7 +1069,6 @@ const styles = StyleSheet.create({
     color: '#666',
     marginLeft: 16,
   },
-
   reportsLoadingContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -840,53 +1103,137 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    marginBottom: 12,
   },
-  viewReportsTextContainer: {
+  viewReportsInfo: {
     flex: 1,
-    marginLeft: 12,
-    marginRight: 8,
   },
   viewReportsTitle: {
     fontSize: 16,
     fontWeight: '600',
     color: '#333',
-    marginBottom: 2,
   },
   viewReportsSubtitle: {
     fontSize: 14,
     color: '#666',
-    lineHeight: 18,
+    marginTop: 2,
   },
-  latestReportPreview: {
-    marginTop: 12,
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: '#F0F0F0',
-  },
-  latestReportLabel: {
-    fontSize: 12,
-    color: '#888',
-    fontWeight: '500',
-    marginBottom: 6,
-  },
-  latestReportContent: {
+  reportStatusIndicators: {
     flexDirection: 'row',
-    alignItems: 'center',
+    gap: 4,
   },
   reportStatusDot: {
     width: 8,
     height: 8,
     borderRadius: 4,
-    marginRight: 8,
   },
-  latestReportText: {
-    flex: 1,
+  viewAllReportsButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    backgroundColor: '#F0F8FF',
+    borderRadius: 8,
+  },
+  viewAllReportsText: {
     fontSize: 14,
-    color: '#333',
-    marginRight: 8,
+    color: '#007AFF',
+    fontWeight: '600',
+    marginRight: 4,
   },
-  latestReportDate: {
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.9)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalHeader: {
+    position: 'absolute',
+    top: 40,
+    left: 20,
+    right: 20,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    zIndex: 2,
+  },
+  modalCloseButton: {
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    borderRadius: 20,
+    padding: 8,
+  },
+  modalPhotoCounter: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 15,
+  },
+  modalImageContainer: {
+    width: screenWidth * 0.9,
+    height: screenHeight * 0.8,
+    justifyContent: 'center',
+    alignItems: 'center',
+    position: 'relative',
+  },
+  modalImage: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'contain',
+  },
+  modalNavButton: {
+    position: 'absolute',
+    top: '50%',
+    backgroundColor: 'rgba(0,0,0,0.3)',
+    borderRadius: 25,
+    padding: 10,
+    zIndex: 1,
+  },
+  modalNavButtonLeft: {
+    left: 10,
+  },
+  modalNavButtonRight: {
+    right: 10,
+  },
+  modalFooter: {
+    position: 'absolute',
+    bottom: 40,
+    left: 20,
+    right: 20,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    borderRadius: 15,
+    padding: 15,
+    alignItems: 'center',
+  },
+  modalPhotoInfo: {
+    alignItems: 'center',
+  },
+  modalVerificationBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(76, 175, 80, 0.2)',
+    borderRadius: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    marginBottom: 8,
+  },
+  modalVerificationText: {
     fontSize: 12,
-    color: '#666',
+    color: '#4CAF50',
+    fontWeight: '600',
+    marginLeft: 4,
+  },
+  modalPhotoUploader: {
+    fontSize: 16,
+    color: 'white',
+    fontWeight: '500',
+    marginBottom: 2,
+  },
+  modalPhotoDate: {
+    fontSize: 12,
+    color: 'rgba(255,255,255,0.7)',
   },
 });

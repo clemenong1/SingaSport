@@ -41,6 +41,12 @@ export default function SignUpScreen() {
       Alert.alert('Error', 'Email is required');
       return false;
     }
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email)) {
+      Alert.alert('Error', 'Please enter a valid email address');
+      return false;
+    }
     if (!formData.password) {
       Alert.alert('Error', 'Password is required');
       return false;
@@ -65,7 +71,6 @@ export default function SignUpScreen() {
 
     setLoading(true);
     try {
-
       const userCredential = await createUserWithEmailAndPassword(auth, formData.email, formData.password);
       const user = userCredential.user;
 
@@ -73,18 +78,39 @@ export default function SignUpScreen() {
         displayName: formData.username
       });
 
-      await userService.createUserProfile(user.uid, {
+      // Prepare profile data with proper null handling for optional fields
+      const profileData: any = {
         username: formData.username,
         email: formData.email,
         country: formData.country,
-        phoneNumber: formData.phoneNumber || undefined
-      });Alert.alert('Success', 'Account created successfully!', [
+      };
+
+      // Only include phone number if it's not empty
+      if (formData.phoneNumber && formData.phoneNumber.trim()) {
+        profileData.phoneNumber = formData.phoneNumber.trim();
+      }
+
+      await userService.createUserProfile(user.uid, profileData);
+
+      Alert.alert('Success', 'Account created successfully!', [
         { text: 'OK', onPress: () => router.replace('/(tabs)/main') }
       ]);
 
     } catch (error: any) {
       console.error('Signup error:', error);
-      Alert.alert('Sign Up Failed', error.message);
+      
+      // Only show user-friendly errors for email and password issues
+      let errorMessage = 'Failed to create account. Please try again.';
+      
+      if (error.code === 'auth/email-already-in-use') {
+        errorMessage = 'This email is already registered. Please use a different email or try logging in.';
+      } else if (error.code === 'auth/invalid-email') {
+        errorMessage = 'Please enter a valid email address.';
+      } else if (error.code === 'auth/weak-password') {
+        errorMessage = 'Password is too weak. Please choose a stronger password.';
+      }
+      
+      Alert.alert('Sign Up Failed', errorMessage);
     } finally {
       setLoading(false);
     }

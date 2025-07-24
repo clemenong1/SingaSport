@@ -52,14 +52,26 @@ export default function CompleteProfileScreen() {
 
     setLoading(true);
     try {
-
-      await userService.createUserProfile(user.uid, {
+      // Prepare profile data with proper null handling for optional fields
+      const profileData: any = {
         username: formData.username,
         email: user.email || '',
         country: formData.country,
-        phoneNumber: formData.phoneNumber || undefined,
-        profileImageUrl: user.photoURL || undefined
-      });Alert.alert('Success', 'Profile completed successfully!', [
+      };
+
+      // Only include phone number if it's not empty
+      if (formData.phoneNumber && formData.phoneNumber.trim()) {
+        profileData.phoneNumber = formData.phoneNumber.trim();
+      }
+
+      // Only include profile image URL if it exists
+      if (user.photoURL) {
+        profileData.profileImageUrl = user.photoURL;
+      }
+
+      await userService.createUserProfile(user.uid, profileData);
+
+      Alert.alert('Success', 'Profile completed successfully!', [
         { text: 'OK', onPress: () => router.replace('/(tabs)/main') }
       ]);
 
