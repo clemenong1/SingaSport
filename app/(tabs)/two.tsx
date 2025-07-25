@@ -17,6 +17,8 @@ import { auth } from '../../src/services/FirebaseConfig';
 import { gameService } from '../../src/services/gameService';
 import { GameSchedule } from '../../src/types';
 import CreateGameModal from '../../src/components/CreateGameModal';
+import { FollowButton } from '../../src/components';
+import { userService } from '../../src/utils/userService';
 
 interface GameCardProps {
   game: GameSchedule;
@@ -26,9 +28,24 @@ interface GameCardProps {
 }
 
 const GameCard = ({ game, currentUserId, onRSVP, isLoading }: GameCardProps) => {
+  const [creatorUsername, setCreatorUsername] = useState<string>('Loading...');
   const isUserRSVPd = game.rsvpUsers?.includes(currentUserId) || false;
   const isGameFull = game.maxPlayers ? game.peopleAttending >= game.maxPlayers : false;
   const isGameCreator = game.createdBy === currentUserId;
+
+  useEffect(() => {
+    fetchCreatorUsername();
+  }, [game.createdBy]);
+
+  const fetchCreatorUsername = async () => {
+    try {
+      const username = await userService.getUsernameByUid(game.createdBy);
+      setCreatorUsername(username || 'Unknown User');
+    } catch (error) {
+      console.error('Error fetching creator username:', error);
+      setCreatorUsername('Unknown User');
+    }
+  };
 
   const formatDateTime = (date: Date): string => {
     const today = new Date();
@@ -122,6 +139,21 @@ const GameCard = ({ game, currentUserId, onRSVP, isLoading }: GameCardProps) => 
           </Text>
         </View>
         <Ionicons name="basketball-outline" size={32} color="#d32f2f" />
+      </View>
+
+      {/* Creator information */}
+      <View style={styles.creatorInfo}>
+        <View style={styles.creatorDetails}>
+          <View style={styles.creatorAvatar}>
+            <Ionicons name="person" size={16} color="#666" />
+          </View>
+          <Text style={styles.creatorUsername}>{creatorUsername}</Text>
+        </View>
+        <FollowButton 
+          targetUserId={game.createdBy} 
+          size="small"
+          style={styles.followButtonStyle}
+        />
       </View>
 
       {/* Game details */}
@@ -511,14 +543,17 @@ const styles = StyleSheet.create({
   },
   gameCard: {
     backgroundColor: '#fff',
-    borderRadius: 16,
+    borderRadius: 12,
     padding: 16,
-    marginVertical: 8,
-    elevation: 2,
+    marginBottom: 12,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.22,
-    shadowRadius: 2.22,
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
   gameHeader: {
     flexDirection: 'row',
@@ -527,38 +562,73 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   gameTypeBadge: {
-    paddingHorizontal: 12,
+    paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 12,
+    borderRadius: 6,
   },
   gameTypeText: {
     color: '#fff',
     fontSize: 12,
     fontWeight: '600',
+    textTransform: 'capitalize',
   },
   gameTime: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#333',
+    color: '#666',
+    fontWeight: '500',
   },
   courtInfo: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: 12,
   },
   courtMainInfo: {
     flex: 1,
+    paddingRight: 12,
   },
   courtName: {
     fontSize: 18,
-    fontWeight: '700',
+    fontWeight: 'bold',
     color: '#333',
     marginBottom: 4,
   },
   courtAddress: {
     fontSize: 14,
     color: '#666',
-    lineHeight: 20,
+    lineHeight: 18,
+  },
+  creatorInfo: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+    paddingVertical: 8,
+    paddingHorizontal: 4,
+    backgroundColor: '#f8f9fa',
+    borderRadius: 8,
+  },
+  creatorDetails: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  creatorAvatar: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#e0e0e0',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 8,
+  },
+  creatorUsername: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#333',
+  },
+  followButtonStyle: {
+    marginLeft: 8,
   },
   gameDetails: {
     flexDirection: 'row',
