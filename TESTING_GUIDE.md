@@ -1,10 +1,10 @@
 # SingaSport Testing Guide
 
-A comprehensive testing suite for the SingaSport basketball court finder app, covering all 7 major feature areas with **28 individual test cases** providing visual console output and detailed test scenarios.
+A comprehensive testing suite for the SingaSport basketball court finder app, covering all 7 major feature areas providing visual console output and detailed test scenarios.
 
 ## Test Categories Overview
 
-### 1. Account Creation System (3 tests)
+### 1. Account Creation System
 **File:** `src/services/__tests__/authService-test.js`  
 **Coverage:** Authentication, user creation, validation, and security
 
@@ -12,7 +12,7 @@ A comprehensive testing suite for the SingaSport basketball court finder app, co
 - **Input Validation:** Email format, username rules, password strength, required fields
 - **User Model Logic:** Default attributes assignment (points = 0, role = 'user')
 
-### 2. Search and Map Feature System (3 tests)
+### 2. Search and Map Feature System
 **File:** `src/services/__tests__/searchMapService-test.js`  
 **Coverage:** Court search, filtering, distance calculation, autocomplete
 
@@ -20,7 +20,7 @@ A comprehensive testing suite for the SingaSport basketball court finder app, co
 - **Search Filtering:** Text queries, status filters (open/closed), amenity filters (indoor/outdoor)
 - **Distance Calculation:** Haversine formula implementation, edge cases, coordinate validation
 
-### 3. Geofencing System (3 tests)
+### 3. Geofencing System
 **File:** `src/services/__tests__/geofencingService-test.js`  
 **Coverage:** Location detection, entry/exit events, notifications
 
@@ -28,7 +28,7 @@ A comprehensive testing suite for the SingaSport basketball court finder app, co
 - **Region Detection:** Point-in-polygon logic, multiple geofences, boundary edge cases
 - **Entry/Exit Events:** State change detection, simultaneous entries/exits
 
-### 4. User Contribution (Live Report) System (4 tests)
+### 4. User Contribution (Live Report) System
 **File:** `src/services/__tests__/reportService-test.js`  
 **Coverage:** Report validation, aggregation, voting, spam prevention
 
@@ -36,7 +36,7 @@ A comprehensive testing suite for the SingaSport basketball court finder app, co
 - **Input Validation:** Required fields, description length, issue type validation
 - **Spam Prevention:** Rate limiting, time-based detection, content moderation
 
-### 5. Game Scheduling (Community Engagement) System (4 tests)
+### 5. Game Scheduling (Community Engagement) System
 **File:** `src/services/__tests__/gameSchedulingService-test.js`  
 **Coverage:** Game creation, join/leave logic, notifications, cancellation
 
@@ -46,7 +46,7 @@ A comprehensive testing suite for the SingaSport basketball court finder app, co
 - **Notification Logic:** Reminder scheduling (24h, 1h, 15min), timing accuracy
 - **Cancellation Authorization:** Creator rights, admin permissions, past game prevention
 
-### 6. User Profile and Points System (7 tests)
+### 6. User Profile and Points System
 **File:** `src/utils/__tests__/userService-test.js`  
 **Coverage:** User profile management, points awarding, profile creation
 
@@ -56,7 +56,7 @@ A comprehensive testing suite for the SingaSport basketball court finder app, co
 - **Action Rewards:** Specific point values for different user actions (reports, games, verification)
 - **Error Handling:** Non-existent users, invalid point amounts, database errors
 
-### 7. AI Chatbot for Suggestions System (4 tests)
+### 7. AI Chatbot for Suggestions System
 **File:** `src/services/__tests__/aiChatbotService-test.js`  
 **Coverage:** Intent parsing, suggestions, fallbacks, session context
 
