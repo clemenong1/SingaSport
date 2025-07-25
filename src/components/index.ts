@@ -8,3 +8,4 @@ export * from './CreateGameModal';
 export * from './VerifyReportComponent';
 export * from './AIVerificationStatusComponent';
 export * from './AIVerificationIntegratedUpload';
+export { default as FollowButton } from './FollowButton';

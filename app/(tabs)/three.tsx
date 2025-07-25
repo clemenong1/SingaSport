@@ -21,6 +21,9 @@ export default function ProfileScreen() {
   const loadUserProfile = async () => {
     try {
       if (auth.currentUser) {
+        // Migrate user for follow system if needed
+        await userService.migrateUserForFollowSystem(auth.currentUser.uid);
+        
         const profile = await userService.getUserProfile(auth.currentUser.uid);
         
         // Migrate points for existing users
@@ -121,6 +124,48 @@ export default function ProfileScreen() {
 
         <Text style={styles.userName}>{userProfile?.username || 'User'}</Text>
         <Text style={styles.userEmail}>{userProfile?.email || 'No email'}</Text>
+      </View>
+
+      {/* Social Stats Section */}
+      <View style={styles.infoSection}>
+        <Text style={styles.sectionTitle}>Socials</Text>
+        <View style={styles.socialStatsCard}>
+          <TouchableOpacity 
+            style={styles.statItem} 
+            onPress={() => {
+              router.push({
+                pathname: '/profile/followList' as any,
+                params: { 
+                  userId: userProfile?.uid || '',
+                  listType: 'followers',
+                  username: userProfile?.username || 'User'
+                }
+              });
+            }}
+          >
+            <Text style={styles.statNumber}>{userProfile?.followersCount || 0}</Text>
+            <Text style={styles.statLabel}>Followers</Text>
+          </TouchableOpacity>
+          
+          <View style={styles.statDivider} />
+          
+          <TouchableOpacity 
+            style={styles.statItem}
+            onPress={() => {
+              router.push({
+                pathname: '/profile/followList' as any,
+                params: { 
+                  userId: userProfile?.uid || '',
+                  listType: 'following',
+                  username: userProfile?.username || 'User'
+                }
+              });
+            }}
+          >
+            <Text style={styles.statNumber}>{userProfile?.followingCount || 0}</Text>
+            <Text style={styles.statLabel}>Following</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Profile Information Section */}
@@ -427,22 +472,25 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   pointsBreakdown: {
-    flexDirection: 'column',
-    gap: 12,
+    marginTop: 16,
   },
   pointsItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    backgroundColor: '#f8f9fa',
-    borderRadius: 10,
+    marginBottom: 8,
+  },
+  pointsIconContainer: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#f0f0f0',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 8,
   },
   pointsItemText: {
-    fontSize: 14,
-    color: '#333',
-    marginLeft: 10,
-    fontWeight: '500',
+    fontSize: 13,
+    color: '#666',
   },
   trophyContainer: {
     backgroundColor: 'rgba(255, 215, 0, 0.1)',
@@ -455,14 +503,42 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(255, 215, 0, 0.3)',
   },
-  pointsIconContainer: {
+  socialStatsCard: {
     backgroundColor: '#fff',
-    borderRadius: 8,
-    width: 30,
-    height: 30,
-    justifyContent: 'center',
+    borderRadius: 12,
+    padding: 16,
+    flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
+    justifyContent: 'space-around',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  statItem: {
+    alignItems: 'center',
+    flex: 1,
+    paddingVertical: 8,
+  },
+  statNumber: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 4,
+  },
+  statLabel: {
+    fontSize: 14,
+    color: '#666',
+    fontWeight: '500',
+  },
+  statDivider: {
+    width: 1,
+    height: 40,
+    backgroundColor: '#e0e0e0',
+    marginHorizontal: 16,
   },
 });

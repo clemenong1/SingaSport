@@ -1,4 +1,4 @@
-import { doc, getDoc, setDoc, updateDoc, increment } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc, increment, writeBatch, arrayUnion, arrayRemove } from 'firebase/firestore';
 import { db } from '../services/FirebaseConfig';
 
 export interface UserProfile {
@@ -11,10 +11,15 @@ export interface UserProfile {
   points: number;
   createdAt: string;
   updatedAt: string;
+  // Follow system fields
+  following: string[];
+  followers: string[];
+  followingCount: number;
+  followersCount: number;
 }
 
 export const userService = {
-  async createUserProfile(uid: string, profileData: Omit<UserProfile, 'uid' | 'createdAt' | 'updatedAt' | 'points'>) {
+  async createUserProfile(uid: string, profileData: Omit<UserProfile, 'uid' | 'createdAt' | 'updatedAt' | 'points' | 'following' | 'followers' | 'followingCount' | 'followersCount'>) {
     const timestamp = new Date().toISOString();
     
     // Handle optional fields properly - convert undefined to null for Firebase compatibility
@@ -28,6 +33,10 @@ export const userService = {
       uid,
       ...cleanedProfileData,
       points: 0, // Initialize with 0 points
+      following: [], // Initialize empty following array
+      followers: [], // Initialize empty followers array
+      followingCount: 0, // Initialize with 0 following count
+      followersCount: 0, // Initialize with 0 followers count
       createdAt: timestamp,
       updatedAt: timestamp
     };
@@ -135,6 +144,176 @@ export const userService = {
       return false;
     } catch (error) {
       console.error('Error migrating user points:', error);
+      return false;
+    }
+  },
+
+  // Follow System Functions
+  async followUser(currentUserId: string, targetUserId: string): Promise<boolean> {
+    try {
+      // Prevent self-following
+      if (currentUserId === targetUserId) {
+        throw new Error("You cannot follow yourself");
+      }
+
+      // Check if already following
+      const isAlreadyFollowing = await this.isFollowing(currentUserId, targetUserId);
+      if (isAlreadyFollowing) {
+        throw new Error("You are already following this user");
+      }
+
+      // Use batch for atomic operation
+      const batch = writeBatch(db);
+      
+      const currentUserRef = doc(db, 'users', currentUserId);
+      const targetUserRef = doc(db, 'users', targetUserId);
+      
+      // Update current user's following list and count
+      batch.update(currentUserRef, {
+        following: arrayUnion(targetUserId),
+        followingCount: increment(1),
+        updatedAt: new Date().toISOString()
+      });
+      
+      // Update target user's followers list and count
+      batch.update(targetUserRef, {
+        followers: arrayUnion(currentUserId),
+        followersCount: increment(1),
+        updatedAt: new Date().toISOString()
+      });
+      
+      await batch.commit();
+      return true;
+    } catch (error) {
+      console.error('Error following user:', error);
+      return false;
+    }
+  },
+
+  async unfollowUser(currentUserId: string, targetUserId: string): Promise<boolean> {
+    try {
+      // Prevent self-unfollowing
+      if (currentUserId === targetUserId) {
+        throw new Error("You cannot unfollow yourself");
+      }
+
+      // Check if actually following
+      const isFollowing = await this.isFollowing(currentUserId, targetUserId);
+      if (!isFollowing) {
+        throw new Error("You are not following this user");
+      }
+
+      // Use batch for atomic operation
+      const batch = writeBatch(db);
+      
+      const currentUserRef = doc(db, 'users', currentUserId);
+      const targetUserRef = doc(db, 'users', targetUserId);
+      
+      // Update current user's following list and count
+      batch.update(currentUserRef, {
+        following: arrayRemove(targetUserId),
+        followingCount: increment(-1),
+        updatedAt: new Date().toISOString()
+      });
+      
+      // Update target user's followers list and count
+      batch.update(targetUserRef, {
+        followers: arrayRemove(currentUserId),
+        followersCount: increment(-1),
+        updatedAt: new Date().toISOString()
+      });
+      
+      await batch.commit();
+      return true;
+    } catch (error) {
+      console.error('Error unfollowing user:', error);
+      return false;
+    }
+  },
+
+  async isFollowing(currentUserId: string, targetUserId: string): Promise<boolean> {
+    try {
+      const currentUserProfile = await this.getUserProfile(currentUserId);
+      if (!currentUserProfile) return false;
+      
+      return currentUserProfile.following?.includes(targetUserId) || false;
+    } catch (error) {
+      console.error('Error checking follow status:', error);
+      return false;
+    }
+  },
+
+  async getFollowers(userId: string): Promise<UserProfile[]> {
+    try {
+      const userProfile = await this.getUserProfile(userId);
+      if (!userProfile || !userProfile.followers) return [];
+
+      const followersProfiles: UserProfile[] = [];
+      
+      // Fetch follower profiles in batches
+      for (const followerId of userProfile.followers) {
+        const followerProfile = await this.getUserProfile(followerId);
+        if (followerProfile) {
+          followersProfiles.push(followerProfile);
+        }
+      }
+      
+      return followersProfiles;
+    } catch (error) {
+      console.error('Error getting followers:', error);
+      return [];
+    }
+  },
+
+  async getFollowing(userId: string): Promise<UserProfile[]> {
+    try {
+      const userProfile = await this.getUserProfile(userId);
+      if (!userProfile || !userProfile.following) return [];
+
+      const followingProfiles: UserProfile[] = [];
+      
+      // Fetch following profiles in batches
+      for (const followingId of userProfile.following) {
+        const followingProfile = await this.getUserProfile(followingId);
+        if (followingProfile) {
+          followingProfiles.push(followingProfile);
+        }
+      }
+      
+      return followingProfiles;
+    } catch (error) {
+      console.error('Error getting following:', error);
+      return [];
+    }
+  },
+
+  async getUsernameByUid(uid: string): Promise<string | null> {
+    try {
+      const userProfile = await this.getUserProfile(uid);
+      return userProfile?.username || null;
+    } catch (error) {
+      console.error('Error getting username:', error);
+      return null;
+    }
+  },
+
+  // Migration function for existing users to add follow fields
+  async migrateUserForFollowSystem(uid: string) {
+    try {
+      const userProfile = await this.getUserProfile(uid);
+      if (userProfile && userProfile.following === undefined) {
+        // Add follow fields to existing users
+        await this.updateUserProfile(uid, {
+          following: [],
+          followers: [],
+          followingCount: 0,
+          followersCount: 0
+        });
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error('Error migrating user for follow system:', error);
       return false;
     }
   },
