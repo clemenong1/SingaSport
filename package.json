@@ -14,7 +14,7 @@
     "test:geofencing": "node scripts/run-all-tests.js 3",
     "test:reports": "node scripts/run-all-tests.js 4",
     "test:games": "node scripts/run-all-tests.js 5",
-    "test:gamification": "node scripts/run-all-tests.js 6",
+    "test:userprofile": "node scripts/run-all-tests.js 6",
     "test:chatbot": "node scripts/run-all-tests.js 7",
     "test:ci": "jest --coverage --watchAll=false --verbose"
   },
