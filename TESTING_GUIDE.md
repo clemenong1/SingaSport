@@ -10,9 +10,7 @@ A comprehensive testing suite for the SingaSport basketball court finder app, co
 
 **Test Details:**
 - **Input Validation:** Email format, username rules, password strength, required fields
-- **Password Security:** Ensures passwords are hashed and never stored in plaintext
 - **User Model Logic:** Default attributes assignment (points = 0, role = 'user')
-- **Error Handling:** Duplicate accounts, network errors, invalid inputs, Firestore permissions
 
 ### 2. Search and Map Feature System (3 tests)
 **File:** `src/services/__tests__/searchMapService-test.js`  
@@ -21,8 +19,6 @@ A comprehensive testing suite for the SingaSport basketball court finder app, co
 **Test Details:**
 - **Search Filtering:** Text queries, status filters (open/closed), amenity filters (indoor/outdoor)
 - **Distance Calculation:** Haversine formula implementation, edge cases, coordinate validation
-- **Data Transformation:** Raw Firebase data to frontend format, GeoJSON conversion
-- **Autocomplete:** Partial queries, suggestion structure, performance limits
 
 ### 3. Geofencing System (3 tests)
 **File:** `src/services/__tests__/geofencingService-test.js`  
@@ -31,8 +27,6 @@ A comprehensive testing suite for the SingaSport basketball court finder app, co
 **Test Details:**
 - **Region Detection:** Point-in-polygon logic, multiple geofences, boundary edge cases
 - **Entry/Exit Events:** State change detection, simultaneous entries/exits
-- **Notification Eligibility:** Cooldown logic, rate limiting, multiple court eligibility
-- **Integrated Workflow:** Complete location processing, state persistence, people count updates
 
 ### 4. User Contribution (Live Report) System (4 tests)
 **File:** `src/services/__tests__/reportService-test.js`  
@@ -40,8 +34,6 @@ A comprehensive testing suite for the SingaSport basketball court finder app, co
 
 **Test Details:**
 - **Input Validation:** Required fields, description length, issue type validation
-- **Report Aggregation:** Grouping by court and issue type, latest report tracking
-- **Upvote/Downvote System:** Vote switching, duplicate prevention, count accuracy
 - **Spam Prevention:** Rate limiting, time-based detection, content moderation
 
 ### 5. Game Scheduling (Community Engagement) System (4 tests)
@@ -72,20 +64,6 @@ A comprehensive testing suite for the SingaSport basketball court finder app, co
 - **Input Parsing:** Intent classification, keyword extraction, confidence scoring
 - **Suggestion Logic:** Preference-based filtering, court ranking, empty result handling
 - **Fallback Handling:** Unknown input responses, consistent fallbacks, helpful guidance
-- **Session Context:** Conversation memory, context building, multi-turn conversations
-
-## Test Count Summary
-
-**Total Test Suites:** 7  
-**Total Individual Tests:** 28  
-**Test Distribution:**
-- Account Creation: 3 tests
-- Search and Map: 3 tests  
-- Geofencing: 3 tests
-- User Contribution: 4 tests
-- Game Scheduling: 4 tests
-- User Profile & Points: 7 tests
-- AI Chatbot: 4 tests
 
 ## How to Run Tests
 
@@ -143,7 +121,7 @@ npm test
 npm run test:ci
 
 # Run a specific test file directly
-npx jest src/services/__tests__/authService-test.js --verbose
+npx jest src/services/__tests__/authService-test.js
 ```
 
 ## Visual Test Output
@@ -255,65 +233,17 @@ This command:
 4. Edge cases properly handled
 5. Error scenarios covered
 
-## Adding New Tests
-
-### Test File Template
-```javascript
-// Mock setup
-jest.mock('service-to-mock', () => ({
-  // mock implementation
-}));
-
-// Visual helpers
-const logTestStart = (testName) => {
-  console.log(`\n[TESTING]: ${testName}`);
-  console.log('='.repeat(50));
-};
-
-// Test suite
-describe('NEW FEATURE SYSTEM', () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-    console.log('\n[SETUP] Clearing mocks for fresh test...');
-  });
-
-  describe('1. FEATURE CATEGORY', () => {
-    test('specific functionality test', async () => {
-      logTestStart('Specific Functionality Test');
-      // Test implementation
-    });
-  });
-});
-```
-
-## Best Practices
-
-### Writing Effective Tests
-1. **Clear Descriptions:** Use descriptive test names and console logs
-2. **Visual Feedback:** Include bracketed labels and color coding for easy scanning
-3. **Edge Cases:** Test boundary conditions and error scenarios
-4. **Mock Properly:** Isolate units under test with comprehensive mocks
-5. **Assert Thoroughly:** Check both positive and negative outcomes
-
-### Maintaining Test Quality
-1. **Regular Updates:** Keep tests synchronized with feature changes
-2. **Refactor Mocks:** Update mocks when dependencies change
-3. **Performance Monitor:** Watch for slow-running tests
-4. **Documentation:** Update this guide when adding new test categories
-
----
-
 ## Conclusion
 
 This comprehensive test suite ensures SingaSport's reliability and quality across all major features with **28 individual test cases** spanning **7 test suites**. The visual console output makes it easy to understand what's being tested and identify any issues quickly.
 
 **Test Coverage Breakdown:**
-- 🔐 **Account Creation:** 3 tests covering authentication and user creation
-- 🗺️ **Search & Map:** 3 tests covering court search and location features  
-- 📍 **Geofencing:** 3 tests covering location detection and notifications
-- 📝 **User Reports:** 4 tests covering report submission and voting
-- 🏀 **Game Scheduling:** 4 tests covering game creation and participation
-- 👤 **User Profile & Points:** 7 tests covering profile management and points system
-- 🤖 **AI Chatbot:** 4 tests covering intent parsing and suggestions
+- 🔐 **Account Creation:** covering authentication and user creation
+- 🗺️ **Search & Map:** covering court search and location features  
+- 📍 **Geofencing:** covering location detection and notifications
+- 📝 **User Reports:** covering report submission and voting
+- 🏀 **Game Scheduling:** covering game creation and participation
+- 👤 **User Profile & Points:** covering profile management and points system
+- 🤖 **AI Chatbot:** covering intent parsing and suggestions
 
 **Ready to test?** Run `npm run test:all` to get started! 
