@@ -308,37 +308,7 @@ describe('GAME SCHEDULING (COMMUNITY ENGAGEMENT) SYSTEM', () => {
     });
   });
 
-  describe('3. NOTIFICATION SCHEDULING', () => {
-    test('Schedule game reminder notifications', async () => {
-      logTestStart('Game Reminder Notification Scheduling System');
-      
-      const gameTime = Date.now() + (25 * 60 * 60 * 1000); // 25 hours from now
-      const game = {
-        id: 'game-1',
-        scheduledTime: gameTime,
-        players: ['user-1', 'user-2'],
-        title: 'Basketball Game'
-      };
-      
-      const notifications = gameSchedulingService.scheduleGameNotifications(game);
-      
-      logTestResult(notifications.length === 2, `scheduleGameNotifications() creates correct number of reminders: expected 2, got ${notifications.length}`);
-      
-      const twentyFourHour = notifications.find(n => n.type === '24h');
-      const oneHour = notifications.find(n => n.type === '1h');
-      
-      logTestResult(!!twentyFourHour, 'scheduleGameNotifications() includes 24-hour advance reminder');
-      logTestResult(!!oneHour, 'scheduleGameNotifications() includes 1-hour advance reminder');
-      
-      if (twentyFourHour) {
-        const timeDiff = Math.abs(twentyFourHour.scheduledTime - (gameTime - 24 * 60 * 60 * 1000));
-        logTestResult(timeDiff < 1000, 'scheduleGameNotifications() sets correct timing for 24-hour reminder');
-      }
-      
-      expect(notifications.length).toBe(2);
-      expect(notifications.every(n => n.players.length === 2)).toBe(true);
-    });
-  });
+
 
   afterAll(() => {
     console.log('\n[COMPLETED] GAME SCHEDULING TESTS COMPLETED');

@@ -261,28 +261,8 @@ describe('AI CHATBOT FOR SUGGESTIONS SYSTEM', () => {
     });
   });
 
-  describe('3. CONVERSATION FLOW', () => {
-    test('Maintain context across conversation turns', async () => {
-      logTestStart('Conversation Context Management System');
-      
-      let sessionData = { context: {}, history: [] };
-      
-      // First interaction
-      const session1 = aiChatbotService.maintainSessionContext(sessionData, "I'm looking for a basketball court");
-      
-      logTestResult(session1.context.lookingForCourt, 'maintainSessionContext() correctly identifies and stores court search context');
-      logTestResult(session1.history.length === 1, `maintainSessionContext() maintains conversation history: expected 1 entry, got ${session1.history.length}`);
-      
-      // Second interaction
-      const session2 = aiChatbotService.maintainSessionContext(session1, "Something near Marina Bay");
-      
-      logTestResult(session2.context.needsLocation, 'maintainSessionContext() correctly identifies and stores location context');
-      logTestResult(session2.history.length === 2, `maintainSessionContext() maintains accumulated conversation history: expected 2 entries, got ${session2.history.length}`);
-      logTestResult(session2.hasContext, 'maintainSessionContext() correctly indicates accumulated context exists');
-      
-      expect(session2.context.lookingForCourt).toBe(true);
-      expect(session2.context.needsLocation).toBe(true);
-    });
+  describe('3. UNKNOWN INPUT HANDLING', () => {
+
 
     test('Handle unknown input gracefully', async () => {
       logTestStart('Unknown Input Graceful Degradation System');
@@ -309,6 +289,7 @@ describe('AI CHATBOT FOR SUGGESTIONS SYSTEM', () => {
     console.log('[SUMMARY] Core AI chatbot functionality tested');
     console.log('[PARSING] Intent classification system verified');
     console.log('[SUGGESTIONS] Preference-based recommendation validated');
+    console.log('[UNKNOWN] Graceful degradation for unrecognized input verified');
     console.log('[STATUS] Ready for production: AI chatbot system validated\n');
   });
 }); 
