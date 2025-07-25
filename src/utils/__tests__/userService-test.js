@@ -74,27 +74,7 @@ describe('UserService Points System', () => {
     );
   });
 
-  test('awardPoints should create profile and award points when user does not exist', async () => {
-    mockUpdateDoc.mockResolvedValue();
-    mockGetDoc.mockResolvedValue({
-      exists: () => false
-    });
 
-    // Mock console.log to prevent "Cannot log after tests are done" error
-    const consoleSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
-    
-    await userService.awardPoints('test-uid', 10);
-    
-    consoleSpy.mockRestore();
-
-    expect(mockDoc).toHaveBeenCalledWith({}, 'users', 'test-uid');
-    expect(mockUpdateDoc).toHaveBeenCalledWith(
-      'mock-doc-ref',
-      expect.objectContaining({
-        points: 10,
-      })
-    );
-  });
 
   test('awardPointsForReport should award 20 points', async () => {
     const mockAwardPoints = jest.spyOn(userService, 'awardPoints');

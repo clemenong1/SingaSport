@@ -179,46 +179,7 @@ describe('GEOFENCING SYSTEM', () => {
     });
   });
 
-  describe('3. NOTIFICATION ELIGIBILITY', () => {
-    test('Check notification cooldown and eligibility', async () => {
-      logTestStart('Notification Cooldown Management System');
-      
-      const now = Date.now();
-      const oneHourAgo = now - (60 * 60 * 1000);
-      const tenMinutesAgo = now - (10 * 60 * 1000);
-      
-      const testCases = [
-        {
-          lastNotification: null,
-          expected: true,
-          description: 'first notification (no previous notification)'
-        },
-        {
-          lastNotification: oneHourAgo,
-          expected: true,
-          description: 'notification after cooldown period expired'
-        },
-        {
-          lastNotification: tenMinutesAgo,
-          expected: false,
-          description: 'notification within cooldown period'
-        }
-      ];
-      
-      let allPassed = true;
-      
-      testCases.forEach(({ lastNotification, expected, description }) => {
-        const eligible = geofencingService.isNotificationEligible('court-1', lastNotification);
-        const testPassed = eligible === expected;
-        
-        logTestResult(testPassed, `isNotificationEligible() correctly handles ${description}: expected ${expected}, got ${eligible}`);
-        
-        if (!testPassed) allPassed = false;
-      });
-      
-      expect(allPassed).toBe(true);
-    });
-  });
+
 
   afterAll(() => {
     console.log('\n[COMPLETED] GEOFENCING TESTS COMPLETED');

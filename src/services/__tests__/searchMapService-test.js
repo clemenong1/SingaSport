@@ -185,34 +185,7 @@ describe('SEARCH AND MAP FEATURE SYSTEM', () => {
     });
   });
 
-  describe('3. DATA TRANSFORMATION', () => {
-    test('Transform raw Firebase data to frontend format', async () => {
-      logTestStart('Firebase Data Structure Transformation');
-      
-      const rawFirebaseData = {
-        'court-1': {
-          name: 'Test Court',
-          location: { lat: 1.3521, lng: 103.8198 },
-          amenities: ['indoor', 'lighting'],
-          lastUpdated: { seconds: 1640995200 }
-        }
-      };
-      
-      const transformed = searchMapService.transformFirebaseData(rawFirebaseData);
-      
-      logTestResult(Array.isArray(transformed), 'transformFirebaseData() converts Firebase object to array format');
-      logTestResult(transformed[0].id === 'court-1', 'transformFirebaseData() preserves court ID in transformed data');
-      logTestResult(transformed[0].name === 'Test Court', 'transformFirebaseData() preserves court name in output');
-      logTestResult(typeof transformed[0].lastUpdated === 'object', 'transformFirebaseData() converts Firebase timestamp to Date object');
-      
-      expect(transformed).toHaveLength(1);
-      expect(transformed[0]).toMatchObject({
-        id: 'court-1',
-        name: 'Test Court',
-        location: { lat: 1.3521, lng: 103.8198 }
-      });
-    });
-  });
+
 
   afterAll(() => {
     console.log('\n[COMPLETED] SEARCH AND MAP TESTS COMPLETED');

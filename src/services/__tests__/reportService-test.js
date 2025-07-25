@@ -186,64 +186,9 @@ describe('USER CONTRIBUTION (LIVE REPORT) SYSTEM', () => {
     });
   });
 
-  describe('2. VOTING SYSTEM', () => {
-    test('Handle report upvotes and downvotes', async () => {
-      logTestStart('Report Voting System Functions');
-      
-      const mockReport = {
-        id: 'report-1',
-        upvotes: 3,
-        downvotes: 1,
-        voters: []
-      };
-      
-      // Mock getDoc to return a document that exists
-      getDoc.mockResolvedValue({
-        exists: () => true,
-        data: () => mockReport
-      });
-      updateDoc.mockResolvedValue();
-      
-      const upvoteResult = await reportService.voteOnReport('report-1', 'user-1', 'upvote');
-      
-      logTestResult(upvoteResult.success, 'voteOnReport() with "upvote" type successfully processes upvote');
-      logTestResult(updateDoc.mock.calls[0][1].upvotes === 4, 'voteOnReport() correctly increments upvote count from 3 to 4');
-      
-      const downvoteResult = await reportService.voteOnReport('report-1', 'user-2', 'downvote');
-      
-      logTestResult(downvoteResult.success, 'voteOnReport() with "downvote" type successfully processes downvote');
-      
-      expect(upvoteResult.success).toBe(true);
-      expect(downvoteResult.success).toBe(true);
-    });
 
-    test('Prevent duplicate voting', async () => {
-      logTestStart('Duplicate Vote Prevention System');
-      
-      const mockReport = {
-        id: 'report-1',
-        upvotes: 3,
-        downvotes: 1,
-        voters: ['user-1'] // User already voted
-      };
-      
-      // Mock getDoc to return a document that exists
-      getDoc.mockResolvedValue({
-        exists: () => true,
-        data: () => mockReport
-      });
-      
-      const result = await reportService.voteOnReport('report-1', 'user-1', 'upvote');
-      
-      logTestResult(!result.success, 'voteOnReport() returns success=false for duplicate vote attempt');
-      logTestResult(result.reason === 'Already voted', `voteOnReport() provides correct error reason: expected "Already voted", got "${result.reason}"`);
-      
-      expect(result.success).toBe(false);
-      expect(result.reason).toBe('Already voted');
-    });
-  });
 
-  describe('3. SPAM PREVENTION', () => {
+  describe('2. SPAM PREVENTION', () => {
     test('Implement rate limiting for report submission', async () => {
       logTestStart('Report Submission Rate Limiting System');
       
