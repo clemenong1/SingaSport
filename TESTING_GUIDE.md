@@ -1,72 +1,91 @@
 # SingaSport Testing Guide
 
-A comprehensive testing suite for the SingaSport basketball court finder app, covering all 7 major feature areas with visual console output and detailed test scenarios.
+A comprehensive testing suite for the SingaSport basketball court finder app, covering all 7 major feature areas with **28 individual test cases** providing visual console output and detailed test scenarios.
 
 ## Test Categories Overview
 
-### 1. Account Creation System
+### 1. Account Creation System (3 tests)
 **File:** `src/services/__tests__/authService-test.js`  
 **Coverage:** Authentication, user creation, validation, and security
 
+**Test Details:**
 - **Input Validation:** Email format, username rules, password strength, required fields
 - **Password Security:** Ensures passwords are hashed and never stored in plaintext
 - **User Model Logic:** Default attributes assignment (points = 0, role = 'user')
 - **Error Handling:** Duplicate accounts, network errors, invalid inputs, Firestore permissions
 
-### 2. Search and Map Feature System
+### 2. Search and Map Feature System (3 tests)
 **File:** `src/services/__tests__/searchMapService-test.js`  
 **Coverage:** Court search, filtering, distance calculation, autocomplete
 
+**Test Details:**
 - **Search Filtering:** Text queries, status filters (open/closed), amenity filters (indoor/outdoor)
 - **Distance Calculation:** Haversine formula implementation, edge cases, coordinate validation
 - **Data Transformation:** Raw Firebase data to frontend format, GeoJSON conversion
 - **Autocomplete:** Partial queries, suggestion structure, performance limits
 
-### 3. Geofencing System
+### 3. Geofencing System (3 tests)
 **File:** `src/services/__tests__/geofencingService-test.js`  
 **Coverage:** Location detection, entry/exit events, notifications
 
+**Test Details:**
 - **Region Detection:** Point-in-polygon logic, multiple geofences, boundary edge cases
 - **Entry/Exit Events:** State change detection, simultaneous entries/exits
 - **Notification Eligibility:** Cooldown logic, rate limiting, multiple court eligibility
 - **Integrated Workflow:** Complete location processing, state persistence, people count updates
 
-### 4. User Contribution (Live Report) System
+### 4. User Contribution (Live Report) System (4 tests)
 **File:** `src/services/__tests__/reportService-test.js`  
 **Coverage:** Report validation, aggregation, voting, spam prevention
 
+**Test Details:**
 - **Input Validation:** Required fields, description length, issue type validation
 - **Report Aggregation:** Grouping by court and issue type, latest report tracking
 - **Upvote/Downvote System:** Vote switching, duplicate prevention, count accuracy
 - **Spam Prevention:** Rate limiting, time-based detection, content moderation
 
-### 5. Game Scheduling (Community Engagement) System
+### 5. Game Scheduling (Community Engagement) System (4 tests)
 **File:** `src/services/__tests__/gameSchedulingService-test.js`  
 **Coverage:** Game creation, join/leave logic, notifications, cancellation
 
+**Test Details:**
 - **Game Creation Validation:** Required fields, time validation, player count limits
 - **Join/Leave Logic:** Capacity checking, duplicate prevention, past game restrictions
 - **Notification Logic:** Reminder scheduling (24h, 1h, 15min), timing accuracy
 - **Cancellation Authorization:** Creator rights, admin permissions, past game prevention
 
-### 6. Gamification System
-**File:** `src/services/__tests__/gamificationService-test.js`  
-**Coverage:** Points, leveling, badges, leaderboards, daily bonuses
+### 6. User Profile and Points System (7 tests)
+**File:** `src/utils/__tests__/userService-test.js`  
+**Coverage:** User profile management, points awarding, profile creation
 
-- **Points Awarding:** Action-based points, bonus calculations, invalid input handling
-- **Leveling Logic:** Level calculation from points, progress tracking, level up detection
-- **Badge System:** Achievement eligibility, various badge types, first-time achievements
-- **Leaderboard:** Multiple sort criteria, ranking accuracy, tie handling
-- **Daily Bonuses:** Login streak tracking, consecutive day detection, cooldown management
+**Test Details:**
+- **Profile Creation:** Default points initialization, required fields, user data validation
+- **Points System:** Action-based point awarding, increment handling, user existence checks
+- **Action Rewards:** Specific point values for different user actions (reports, games, verification)
+- **Error Handling:** Non-existent users, invalid point amounts, database errors
 
-### 7. AI Chatbot for Suggestions System
+### 7. AI Chatbot for Suggestions System (4 tests)
 **File:** `src/services/__tests__/aiChatbotService-test.js`  
 **Coverage:** Intent parsing, suggestions, fallbacks, session context
 
+**Test Details:**
 - **Input Parsing:** Intent classification, keyword extraction, confidence scoring
 - **Suggestion Logic:** Preference-based filtering, court ranking, empty result handling
 - **Fallback Handling:** Unknown input responses, consistent fallbacks, helpful guidance
 - **Session Context:** Conversation memory, context building, multi-turn conversations
+
+## Test Count Summary
+
+**Total Test Suites:** 7  
+**Total Individual Tests:** 28  
+**Test Distribution:**
+- Account Creation: 3 tests
+- Search and Map: 3 tests  
+- Geofencing: 3 tests
+- User Contribution: 4 tests
+- Game Scheduling: 4 tests
+- User Profile & Points: 7 tests
+- AI Chatbot: 4 tests
 
 ## How to Run Tests
 
@@ -96,8 +115,8 @@ npm run test:reports
 # Game Scheduling tests
 npm run test:games
 
-# Gamification tests
-npm run test:gamification
+# User Profile and Points tests
+npm run test:userprofile
 
 # AI Chatbot tests
 npm run test:chatbot
@@ -111,7 +130,7 @@ node scripts/run-all-tests.js 2    # Search and Map
 node scripts/run-all-tests.js 3    # Geofencing
 node scripts/run-all-tests.js 4    # User Contribution
 node scripts/run-all-tests.js 5    # Game Scheduling
-node scripts/run-all-tests.js 6    # Gamification
+node scripts/run-all-tests.js 6    # User Profile & Points
 node scripts/run-all-tests.js 7    # AI Chatbot
 ```
 
@@ -286,6 +305,15 @@ describe('NEW FEATURE SYSTEM', () => {
 
 ## Conclusion
 
-This comprehensive test suite ensures SingaSport's reliability and quality across all major features. The visual console output makes it easy to understand what's being tested and identify any issues quickly.
+This comprehensive test suite ensures SingaSport's reliability and quality across all major features with **28 individual test cases** spanning **7 test suites**. The visual console output makes it easy to understand what's being tested and identify any issues quickly.
+
+**Test Coverage Breakdown:**
+- 🔐 **Account Creation:** 3 tests covering authentication and user creation
+- 🗺️ **Search & Map:** 3 tests covering court search and location features  
+- 📍 **Geofencing:** 3 tests covering location detection and notifications
+- 📝 **User Reports:** 4 tests covering report submission and voting
+- 🏀 **Game Scheduling:** 4 tests covering game creation and participation
+- 👤 **User Profile & Points:** 7 tests covering profile management and points system
+- 🤖 **AI Chatbot:** 4 tests covering intent parsing and suggestions
 
 **Ready to test?** Run `npm run test:all` to get started! 

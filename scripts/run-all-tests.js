@@ -53,10 +53,10 @@ const testSuites = [
     description: 'Game creation, join/leave logic, notifications, cancellation'
   },
   {
-    name: 'Gamification',
-    file: 'src/services/__tests__/gamificationService-test.js',
-    icon: '[POINTS]',
-    description: 'Points, leveling, badges, leaderboards, daily bonuses'
+    name: 'User Profile & Points',
+    file: 'src/utils/__tests__/userService-test.js',
+    icon: '[USER]',
+    description: 'User profile management, points awarding, profile creation'
   },
   {
     name: 'AI Chatbot',
