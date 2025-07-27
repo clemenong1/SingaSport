@@ -10,6 +10,7 @@ import { useColorScheme } from '@/components/useColorScheme';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { auth } from '@/services/FirebaseConfig';
 import { ActivityIndicator, View } from 'react-native';
+import { FollowProvider } from '@/contexts';
 
 export {
   ErrorBoundary,
@@ -88,23 +89,24 @@ function RootLayoutNav({ user }: { user: User | null }) {
 
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack screenOptions={{ headerShown: false }}>
-        {user ? (
-          <>
+      {user ? (
+        <FollowProvider>
+          <Stack screenOptions={{ headerShown: false }}>
             <Stack.Screen name="(tabs)" />
             <Stack.Screen name="editProfile" options={{ presentation: 'modal' }} />
             <Stack.Screen name="search" options={{ headerShown: false }} />
-          </>
-        ) : (
-          <>
-            <Stack.Screen name="login" />
-            <Stack.Screen name="signup" />
-          </>
-        )}
-        {}
-        <Stack.Screen name="completeProfile" options={{ headerShown: false }} />
-        <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
-      </Stack>
+            <Stack.Screen name="completeProfile" options={{ headerShown: false }} />
+            <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
+          </Stack>
+        </FollowProvider>
+      ) : (
+        <Stack screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="login" />
+          <Stack.Screen name="signup" />
+          <Stack.Screen name="completeProfile" options={{ headerShown: false }} />
+          <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
+        </Stack>
+      )}
     </ThemeProvider>
   );
 }

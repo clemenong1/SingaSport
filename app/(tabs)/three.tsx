@@ -87,7 +87,8 @@ export default function ProfileScreen() {
           style: 'destructive',
           onPress: async () => {
             try {
-              await signOut(auth);router.replace('/auth/login');
+              await signOut(auth);
+              router.replace('/login');
             } catch (error: any) {
               Alert.alert('Error', 'Failed to sign out: ' + error.message);
             }

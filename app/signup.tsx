@@ -1,6 +1,6 @@
-import { auth } from '../../src/services/FirebaseConfig';
+import { auth } from '../src/services/FirebaseConfig';
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
-import { userService } from '../../src/utils/userService';
+import { userService } from '../src/utils/userService';
 import React, { useState } from 'react';
 import {
   SafeAreaView,
@@ -189,7 +189,7 @@ export default function SignUpScreen() {
 
               <TouchableOpacity
         style={styles.linkButton}
-        onPress={() => router.push('/auth/login')}
+        onPress={() => router.push('../auth/login')}
       >
         <Text style={styles.linkText}>Already have an account? Log In</Text>
       </TouchableOpacity>

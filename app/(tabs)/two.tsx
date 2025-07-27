@@ -303,9 +303,11 @@ export default function ContributeTab() {
       setRsvpLoading(gameId);
       await gameService.toggleRSVP(gameId, auth.currentUser.uid, isJoining);
       
-      // Show success message with points for joining
+      // Show success message with points information
       if (isJoining) {
         Alert.alert('Success', 'You have joined the game! +5 points earned!');
+      } else {
+        Alert.alert('Left Game', 'You have left the game. -5 points deducted.');
       }
       
       // Note: We don't manually update local state here because the real-time 
