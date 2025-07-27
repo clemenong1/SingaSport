@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import {
   TouchableOpacity,
   Text,
@@ -8,6 +8,7 @@ import {
 } from 'react-native';
 import { auth } from '../services/FirebaseConfig';
 import { userService } from '../utils/userService';
+import { useFollow } from '../contexts';
 
 interface FollowButtonProps {
   targetUserId: string;
@@ -22,30 +23,32 @@ export default function FollowButton({
   style, 
   onFollowChange 
 }: FollowButtonProps) {
-  const [isFollowing, setIsFollowing] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [checkingStatus, setCheckingStatus] = useState(true);
+  const { 
+    followUser, 
+    unfollowUser, 
+    isFollowing: isFollowingUser, 
+    isLoading, 
+    updateFollowStatus 
+  } = useFollow();
 
   const currentUserId = auth.currentUser?.uid;
+  const isFollowing = isFollowingUser(targetUserId);
+  const loading = isLoading(targetUserId);
 
   useEffect(() => {
-    checkFollowStatus();
+    checkInitialFollowStatus();
   }, [targetUserId, currentUserId]);
 
-  const checkFollowStatus = async () => {
+  const checkInitialFollowStatus = async () => {
     if (!currentUserId || currentUserId === targetUserId) {
-      setCheckingStatus(false);
       return;
     }
 
     try {
-      setCheckingStatus(true);
       const following = await userService.isFollowing(currentUserId, targetUserId);
-      setIsFollowing(following);
+      updateFollowStatus(targetUserId, following);
     } catch (error) {
       console.error('Error checking follow status:', error);
-    } finally {
-      setCheckingStatus(false);
     }
   };
 
@@ -53,21 +56,17 @@ export default function FollowButton({
     if (!currentUserId || currentUserId === targetUserId || loading) return;
 
     try {
-      setLoading(true);
-      
       let success = false;
       if (isFollowing) {
-        success = await userService.unfollowUser(currentUserId, targetUserId);
+        success = await unfollowUser(targetUserId);
         if (success) {
-          setIsFollowing(false);
           onFollowChange?.(false);
         } else {
           Alert.alert('Error', 'Failed to unfollow user. Please try again.');
         }
       } else {
-        success = await userService.followUser(currentUserId, targetUserId);
+        success = await followUser(targetUserId);
         if (success) {
-          setIsFollowing(true);
           onFollowChange?.(true);
         } else {
           Alert.alert('Error', 'Failed to follow user. Please try again.');
@@ -76,23 +75,12 @@ export default function FollowButton({
     } catch (error) {
       console.error('Error toggling follow:', error);
       Alert.alert('Error', 'An error occurred. Please try again.');
-    } finally {
-      setLoading(false);
     }
   };
 
   // Don't show button for own profile or if not logged in
   if (!currentUserId || currentUserId === targetUserId) {
     return null;
-  }
-
-  // Show loading spinner while checking initial status
-  if (checkingStatus) {
-    return (
-      <TouchableOpacity style={[styles.button, styles[size], styles.loadingButton, style]} disabled>
-        <ActivityIndicator size="small" color="#999" />
-      </TouchableOpacity>
-    );
   }
 
   return (

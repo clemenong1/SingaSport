@@ -303,6 +303,15 @@ export class GameService {
         });
 
         await batch.commit();
+
+        // Deduct points for leaving a game (after successful batch commit)
+        try {
+          await userService.deductPointsForGameLeaving(userId);
+          console.log('Points deducted for leaving game');
+        } catch (pointsError) {
+          console.error('Error deducting points for leaving game:', pointsError);
+          // Don't fail the RSVP if points deduction fails
+        }
       }
 
       return true;

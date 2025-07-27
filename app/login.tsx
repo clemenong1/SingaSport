@@ -1,4 +1,4 @@
-import { auth } from '../../src/services/FirebaseConfig';
+import { auth } from '../src/services/FirebaseConfig';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import React, { useState } from 'react';
 import {
@@ -20,7 +20,7 @@ export default function LoginScreen() {
   const signIn = async () => {
     setLoading(true);
     try {
-      await signInWithEmailAndPassword(auth, email, password);router.replace('/(tabs)/main');
+      await signInWithEmailAndPassword(auth, email, password);router.push('/(tabs)/main');
     } catch (error: any) {
       Alert.alert('Sign In Failed', error.message);
     } finally {
@@ -63,7 +63,7 @@ export default function LoginScreen() {
 
       <TouchableOpacity
         style={styles.linkButton}
-        onPress={() => router.push('/auth/signup')}
+        onPress={() => router.push('../auth/signup')}
       >
         <Text style={styles.linkText}>Don't have an account? Sign Up</Text>
       </TouchableOpacity>
