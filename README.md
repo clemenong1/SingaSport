@@ -33,7 +33,32 @@ Before you begin, ensure you have the following installed and set up:
     npm install
     ```
 
-2. **Install dependencies (if needed):**
+## Retrieving API Keys
+
+1. **Create a .env file in the project's root.**
+
+2. **Copy this into the file:**
+
+    ```bash
+    EXPO_PUBLIC_FIREBASE_API_KEY=AIzaSyAmuuOXT6dRUStt4-8502jYXO2c25OfLwI
+    EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN=singasport-cd006.firebaseapp.com
+    EXPO_PUBLIC_FIREBASE_PROJECT_ID=singasport-cd006
+    EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET=singasport-cd006.firebasestorage.app
+    EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=166758109207
+    EXPO_PUBLIC_FIREBASE_APP_ID=1:166758109207:web:d12304df252ecf55364c52
+
+    # Google Maps / Places API keys
+    EXPO_PUBLIC_GOOGLE_PLACES_API_KEY=YOUR_API_KEY 
+    EXPO_PUBLIC_IOS_GOOGLE_MAPS_API_KEY=YOUR_API_KEY 
+    EXPO_PUBLIC_ANDROID_GOOGLE_MAPS_API_KEY=YOUR_API_KEY 
+
+    # OpenAI API Key
+    EXPO_PUBLIC_OPENAI_API_KEY=YOUR_API_KEY
+    ```
+
+3. **Replace "YOUR_API_KEY" with your own api key. See variable name where to retrieve the key from. Do not change the variable names.**
+
+2. **Log into Expo account**
 
     ```bash
     npx expo login
