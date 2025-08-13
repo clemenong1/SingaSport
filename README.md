@@ -56,7 +56,7 @@ Before you begin, ensure you have the following installed and set up:
         EXPO_PUBLIC_OPENAI_API_KEY=YOUR_API_KEY
         ```
 
-3. **Replace "YOUR_API_KEY" with your own api key. See variable name where to retrieve the key from. Do not change the variable names.**
+3. **Replace "YOUR_API_KEY" with your own api key. You will need to get your own Google Places, Google Maps IOS, Google Maps Android and OpenAI API Keys. Do not change the variable names in the .env file.**
 
 2. **Log into Expo account**
 
