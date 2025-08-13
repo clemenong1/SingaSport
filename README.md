@@ -59,8 +59,7 @@ Before you begin, ensure you have the following installed and set up:
 
 3. **Replace "YOUR_API_KEY" with your own api key. You will need to get your own Google Places, Google Maps IOS, Google Maps Android and OpenAI API Keys. Do not change the variable names in the .env file.**
 
-4. **Firebase Setup**
-    This app requires Firebase for Database, Storage, and Authentication.
+4. **Firebase Setup This app requires Firebase for Database, Storage, and Authentication.**
     1. Create a Firebase project
     Go to Firebase Console.
     Click Add Project → Follow the prompts. 
