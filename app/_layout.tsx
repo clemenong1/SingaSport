@@ -16,6 +16,7 @@ export {
   ErrorBoundary,
 } from 'expo-router';
 
+// Start users on the login screen by default
 export const unstable_settings = {
   initialRouteName: 'login',
 };
@@ -27,6 +28,8 @@ export default function RootLayout() {
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
     ...FontAwesome.font,
   });
+  
+  // Track the current user and auth status
   const [user, setUser] = useState<User | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
 
@@ -34,6 +37,7 @@ export default function RootLayout() {
     if (error) throw error;
   }, [error]);
 
+  // Listen for auth changes to automatically switch between login and main app
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setUser(user);
@@ -43,6 +47,7 @@ export default function RootLayout() {
     return unsubscribe;
   }, []);
 
+  // Set up push notifications
   useEffect(() => {
     async function registerForPushNotificationsAsync() {
       const { status: existingStatus } = await Notifications.getPermissionsAsync();
@@ -73,6 +78,7 @@ export default function RootLayout() {
     }
   }, [loaded, authLoading]);
 
+  // Show loading while setting up
   if (!loaded || authLoading) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#f9f9f9' }}>
@@ -90,6 +96,7 @@ function RootLayoutNav({ user }: { user: User | null }) {
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
       {user ? (
+        // Logged in, show main app with tabs
         <FollowProvider>
           <Stack screenOptions={{ headerShown: false }}>
             <Stack.Screen name="(tabs)" />
@@ -100,6 +107,7 @@ function RootLayoutNav({ user }: { user: User | null }) {
           </Stack>
         </FollowProvider>
       ) : (
+        // Not logged in, show auth screens
         <Stack screenOptions={{ headerShown: false }}>
           <Stack.Screen name="login" />
           <Stack.Screen name="signup" />

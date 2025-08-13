@@ -98,10 +98,8 @@ export default function MapScreen(): React.JSX.Element {
     return R * c;
   };
 
-  /**
-   * Find the correct Firestore document ID for a court based on its name
-   * Since court.id comes from the name field, we need to find the actual doc ID
-   */
+  // Find the correct Firestore document ID for a court based on its name
+   
   const findCourtDocumentId = async (courtName: string): Promise<string | null> => {
     try {
       const courtsRef = collection(db, 'basketballCourts');
@@ -120,9 +118,9 @@ export default function MapScreen(): React.JSX.Element {
     }
   };
 
-  /**
-   * Decrement people count when user exits geofence (with minimum of 0)
-   */
+  
+  // Decrement people count when user exits geofence
+
   const decrementPeopleCount = async (courtName: string): Promise<boolean> => {
     try {
       const courtDocId = await findCourtDocumentId(courtName);
@@ -153,9 +151,7 @@ export default function MapScreen(): React.JSX.Element {
     }
   };
 
-  /**
-   * Optimized increment using docId when available
-   */
+  // Faster increment when we already have the doc ID
   const incrementPeopleCountOptimized = async (courtName: string, docId?: string): Promise<boolean> => {
     try {
       let courtDocId = docId;
@@ -180,9 +176,7 @@ export default function MapScreen(): React.JSX.Element {
     }
   };
 
-  /**
-   * Optimized decrement using docId when available
-   */
+  // Faster decrement when we already have the doc ID
   const decrementPeopleCountOptimized = async (courtName: string, docId?: string): Promise<boolean> => {
     try {
       let courtDocId = docId;
@@ -443,10 +437,7 @@ export default function MapScreen(): React.JSX.Element {
     }
   };
 
-  /**
-   * Optimized version that accepts coordinates (no permission requests)
-   * Used for dynamic geofencing every 5 seconds
-   */
+  // Quick court lookup for geofencing - no permission checks needed
   const getNearbyBasketballCourtsFromLocation = async (lat: number, lng: number): Promise<BasketballCourt[]> => {
     try {const fullGeohash = geohash.encode(lat, lng, 10);
       const userGeohash = fullGeohash.substring(0, 6);const courtsRef = collection(db, 'basketballCourts');
@@ -513,9 +504,7 @@ export default function MapScreen(): React.JSX.Element {
     }
   };
 
-  /**
-   * Fallback function to query courts by radius when geohash returns no results
-   */
+  // Backup method to find courts when geohash fails
   const getFallbackCourts = async (userLat: number, userLng: number, radiusKm: number = 5): Promise<BasketballCourt[]> => {
     try {const courtsRef = collection(db, 'basketballCourts');
       const allCourtsQuery = query(courtsRef, limit(100)); // Get more courts for radius filtering
@@ -599,7 +588,7 @@ export default function MapScreen(): React.JSX.Element {
 
   return (
     <View style={styles.container}>
-      {/* Chatbot Button */}
+      {/* AI chat button */}
       <TouchableOpacity
         style={styles.chatbotButton}
         onPress={() => router.push('../SingaChat')}
@@ -608,7 +597,7 @@ export default function MapScreen(): React.JSX.Element {
         <Ionicons name="chatbubble-ellipses" size={28} color="#007BFF" />
         <Text style={styles.chatbotButtonText}>Singa</Text>
       </TouchableOpacity>
-      {/* Search Bar */}
+      {/* Court search */}
       <TouchableOpacity
         style={styles.search}
         onPress={() => router.push('/courts/search')}
