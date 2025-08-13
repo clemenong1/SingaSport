@@ -10,7 +10,7 @@
     "test": "jest --watchAll",
     "test:all": "node scripts/run-all-tests.js",
     "test:auth": "node scripts/run-all-tests.js 1",
-    "test:search": "node scripts/run-all-tests.js 2", 
+    "test:search": "node scripts/run-all-tests.js 2",
     "test:geofencing": "node scripts/run-all-tests.js 3",
     "test:reports": "node scripts/run-all-tests.js 4",
     "test:games": "node scripts/run-all-tests.js 5",
@@ -64,6 +64,7 @@
   "devDependencies": {
     "@babel/core": "^7.25.2",
     "@types/babel__traverse": "^7.20.7",
+    "@types/jest": "^30.0.0",
     "@types/ngeohash": "^0.6.8",
     "@types/react": "~19.0.10",
     "@types/react-native": "^0.72.8",
