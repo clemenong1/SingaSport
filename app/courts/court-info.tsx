@@ -159,7 +159,7 @@ export default function CourtInfoScreen() {
     try {
       setLoadingReports(true);
       const reportsRef = collection(db, 'basketballCourts', courtId, 'reports');
-      const q = query(reportsRef, orderBy('reportedAt', 'desc'), limit(3));
+      const q = query(reportsRef, orderBy('reportedAt', 'desc'), limit(100));
       const querySnapshot = await getDocs(q);
 
       const reportsData: Report[] = [];
