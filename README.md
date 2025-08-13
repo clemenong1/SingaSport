@@ -63,7 +63,7 @@ Before you begin, ensure you have the following installed and set up:
     1. Create a Firebase project
     Go to Firebase Console.
     Click Add Project → Follow the prompts. 
-    Then press Create Project
+    Then press Create Project.
 
     3. Enable Firebase services
         1. Authentication:
