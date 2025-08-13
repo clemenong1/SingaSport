@@ -16,9 +16,9 @@ function TabBarIcon(props: {
 export default function TabLayout() {
   const colorScheme = useColorScheme();
 
+  // Set up the main navigation tabs for the app
   return (
 <Tabs
-  initialRouteName="main"
   screenOptions={{
     headerShown: true,
     tabBarActiveTintColor: '#d32f2f',
