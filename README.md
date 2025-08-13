@@ -102,17 +102,13 @@ Before you begin, ensure you have the following installed and set up:
         1. Go to Firebase Console
         2. Open Firebase Console.
         3. Select your project (e.g., SingaSportTest).
-        4. Navigate to Project Settings
-        5. Click the ⚙️ gear icon next to Project Overview in the left sidebar.
-        6. Select Project settings.
-        7. Open Service Accounts Tab
-        8. Go to the Service accounts tab (last tab in the settings page).
+        4. Click the ⚙️ gear icon next to Project Overview in the left sidebar.
+        5. Navigate to Project Settings
+        7. Select Project settings.
+        8. Open Service Accounts Tab
         9. Generate a New Private Key
-        10. Make sure Firebase Admin SDK is selected.
-        11. Click Generate new private key.
-        12. Confirm by clicking Generate key in the popup.
-        13. Save the File A .json file will be downloaded — this is your service account key. Store it securely (never commit it to GitHub).
-        14. Store this .json file in the root of your project directory
+        10. Save the File A .json file will be downloaded — this is your service account key. Store it securely (never commit it to GitHub).
+        11. Store this .json file in the root of your project directory
             
     6. Run writeToFB.js to add all basketball courts to database
         1. click src -> services -> writeToFB.js
