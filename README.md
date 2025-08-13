@@ -1,8 +1,8 @@
 # 📱 SingaSport
 
 **We optimize public sports facility usage in Singapore by providing real-time availability,  
-crowd data, and social features to enhance the playing experience and build a connected sporting community.**
-We are still currently developing additional features such as real time video footage of courts. After which, we will deploy our app to the App Store!
+crowd data, and social features to enhance the playing experience and build a connected sporting community.
+We are still currently developing additional features such as real time video footage of courts. After which, we will deploy our app to the App Store!**
 
 ---
 
