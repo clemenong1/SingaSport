@@ -66,16 +66,16 @@ Before you begin, ensure you have the following installed and set up:
     Then press Create Project
 
     3. Enable Firebase services
-        1. Authentication
+        1. Authentication:
            Go to Build → Authentication → Get Started.
            Enable the following providers:
            Email/Password (or any others you used).
            Make sure Email/Password is enabled before clicking Save.
-        2. Firestore Database
+        2. Firestore Database:
         Go to Build → Firestore Database → Create Database.
         Choose Southeastasia1 for location if you are in Singapore. Else, choose the location best suited for where you are at.
         Choose Start in Test Mode (or your preferred rules) for development.
-        3. Storage
+        3. Storage:
         Go to Build → Storage
         You will have to link your Cloud Billing Account and upgrade to Blaze plan. 
         Set budget to 1SGD.
