@@ -353,6 +353,8 @@ SingaSport/
 - 👤 **User Profiles**: Authentication and profile management
 - 📊 **Court Reports**: Report issues and maintenance needs
 - 🔄 **Real-time Updates**: Live data synchronization across all users
+- 🤖 **AI Chatbot**: Recommends courts based on the user's prompt
+- 🕵️‍♂️ **AI Report Verifier**: Verifies if a user's report is legitimate based on the user's description of the issue and an uploaded picture
 
 ### App Structure
 - **Map Tab** (`main.tsx`): Interactive map with court locations and real-time data
