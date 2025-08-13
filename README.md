@@ -57,9 +57,10 @@ Before you begin, ensure you have the following installed and set up:
         EXPO_PUBLIC_OPENAI_API_KEY=YOUR_API_KEY
         ```
 
-3. **Replace "YOUR_API_KEY" with your own api key. You will need to get your own Google Places, Google Maps IOS, Google Maps Android and OpenAI API Keys. Do not change the variable names in the .env file.**
+3. **Place your API keys in the respective variable names in the .env file. You will need to get your own Google Places, Google Maps IOS, Google Maps Android and OpenAI API Keys.**
 
 4. **Firebase Setup**
+   
     This app requires Firebase for Database, Storage, and Authentication.
     1. Create a Firebase project
     Go to Firebase Console.
