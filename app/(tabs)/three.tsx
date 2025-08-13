@@ -88,7 +88,15 @@ export default function ProfileScreen() {
           onPress: async () => {
             try {
               await signOut(auth);
-              router.replace('/login');
+              // Give auth state a moment to update, then navigate if needed
+              setTimeout(() => {
+                try {
+                  router.replace('/login');
+                } catch (navError) {
+                  // Auth state change should handle navigation, ignore nav errors
+                  console.log('Navigation handled by auth state change');
+                }
+              }, 100);
             } catch (error: any) {
               Alert.alert('Error', 'Failed to sign out: ' + error.message);
             }

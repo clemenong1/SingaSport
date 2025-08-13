@@ -20,7 +20,16 @@ export default function LoginScreen() {
   const signIn = async () => {
     setLoading(true);
     try {
-      await signInWithEmailAndPassword(auth, email, password);router.push('/(tabs)/main');
+      await signInWithEmailAndPassword(auth, email, password);
+      // Give auth state a moment to update, then navigate if needed
+      setTimeout(() => {
+        try {
+          router.replace('/(tabs)/main');
+        } catch (navError) {
+          // Auth state change should handle navigation, ignore nav errors
+          console.log('Navigation handled by auth state change');
+        }
+      }, 100);
     } catch (error: any) {
       Alert.alert('Sign In Failed', error.message);
     } finally {
@@ -63,7 +72,7 @@ export default function LoginScreen() {
 
       <TouchableOpacity
         style={styles.linkButton}
-        onPress={() => router.push('../auth/signup')}
+        onPress={() => router.push('/signup')}
       >
         <Text style={styles.linkText}>Don't have an account? Sign Up</Text>
       </TouchableOpacity>
