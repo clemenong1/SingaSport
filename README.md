@@ -117,7 +117,7 @@ Before you begin, ensure you have the following installed and set up:
         const serviceAccount = JSON.parse(readFileSync('./XXX.json', 'utf8'));
        ```
         replace XXX with the name of the file you just saved in your root dir
-        3. run
+        and then run
        ```bash
        node src/services/writeToFB.js
        ```
