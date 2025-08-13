@@ -18,7 +18,7 @@ Before you begin, ensure you have the following installed and set up:
 - [Expo CLI](https://docs.expo.dev/get-started/installation/)
 - [Expo account](https://expo.dev/signup)
 
-### 📦 Installation
+### 📦 Testing (for testers)
 
 1. **Clone the repository:**
 
