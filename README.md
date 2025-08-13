@@ -64,58 +64,64 @@ Before you begin, ensure you have the following installed and set up:
     Go to Firebase Console.
     Click Add Project → Follow the prompts. 
     Then press Create Project
-    2. Enable Firebase services
-    Authentication
-    Go to Build → Authentication → Get Started.
-    Enable the following providers:
-    Email/Password (or any others you used).
-    Make sure Email/Password is enabled before clicking Save.
-    Firestore Database
-    Go to Build → Firestore Database → Create Database.
-    Choose Southeastasia1 for location if you are in Singapore. Else, choose the location best suited for where you are at.
-    Choose Start in Test Mode (or your preferred rules) for development.
-    Storage
-    Go to Build → Storage
-    You will have to link your Cloud Billing Account and upgrade to Blaze plan. 
-    Set budget to 1SGD.
-    Click on Get Started.
-    Change the location to the same location as Firestore Database.
-    Choose Start in test mode.
-    3. Get your Firebase config
-    Go to Project Settings → General → Your Apps.
-    Register a new web app.
-    Allow Firebase hosting.
-    Copy the firebaseConfig object and place it in your .env file:
-    EXPO_PUBLIC_FIREBASE_API_KEY=your-key
-    EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN=your-project.firebaseapp.com
-    EXPO_PUBLIC_FIREBASE_PROJECT_ID=your-project-id
-    EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET=your-project.appspot.com
-    EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your-sender-id
-    EXPO_PUBLIC_FIREBASE_APP_ID=your-app-id
-    Make sure .env is not committed to version control.
-    4. Get Firebase service account JSON file
-        Go to Firebase Console
-        Open Firebase Console.
-        Select your project (e.g., SingaSportTest).
-        Navigate to Project Settings
-        Click the ⚙️ gear icon next to Project Overview in the left sidebar.
-        Select Project settings.
-        Open Service Accounts Tab
-        Go to the Service accounts tab (last tab in the settings page).
-        Generate a New Private Key
-        Make sure Firebase Admin SDK is selected.
-        Click Generate new private key.
-        Confirm by clicking Generate key in the popup.
-        Save the File
-        A .json file will be downloaded — this is your service account key.
-        Store it securely (never commit it to GitHub).
-        store this .json file in the root of your project directory
-    5. Run writeToFB.js to add all basketball courts to database
-        click src -> services -> writeToFB.js
-        replace line 13 with 
+
+    3. Enable Firebase services
+        1. Authentication
+           Go to Build → Authentication → Get Started.
+           Enable the following providers:
+           Email/Password (or any others you used).
+           Make sure Email/Password is enabled before clicking Save.
+        2. Firestore Database
+        Go to Build → Firestore Database → Create Database.
+        Choose Southeastasia1 for location if you are in Singapore. Else, choose the location best suited for where you are at.
+        Choose Start in Test Mode (or your preferred rules) for development.
+        3. Storage
+        Go to Build → Storage
+        You will have to link your Cloud Billing Account and upgrade to Blaze plan. 
+        Set budget to 1SGD.
+        Click on Get Started.
+        Change the location to the same location as Firestore Database.
+        Choose Start in test mode.
+
+    4. Get your Firebase config
+        1. Go to Project Settings → General → Your Apps.
+        2. Register a new web app.
+        3. Allow Firebase hosting.
+        4. Copy the firebaseConfig object and place it in your .env file:
+       ```bash
+        EXPO_PUBLIC_FIREBASE_API_KEY=your-key
+        EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN=your-project.firebaseapp.com
+        EXPO_PUBLIC_FIREBASE_PROJECT_ID=your-project-id
+        EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET=your-project.appspot.com
+        EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your-sender-id
+        EXPO_PUBLIC_FIREBASE_APP_ID=your-app-id
+       ```
+        5. Make sure .env is not committed to version control. Put it in gitignore
+           
+    5. Get Firebase service account JSON file
+        1. Go to Firebase Console
+        2. Open Firebase Console.
+        3. Select your project (e.g., SingaSportTest).
+        4. Navigate to Project Settings
+        5. Click the ⚙️ gear icon next to Project Overview in the left sidebar.
+        6. Select Project settings.
+        7. Open Service Accounts Tab
+        8. Go to the Service accounts tab (last tab in the settings page).
+        9. Generate a New Private Key
+        10. Make sure Firebase Admin SDK is selected.
+        11. Click Generate new private key.
+        12. Confirm by clicking Generate key in the popup.
+        13. Save the File A .json file will be downloaded — this is your service account key. Store it securely (never commit it to GitHub).
+        14. Store this .json file in the root of your project directory
+            
+    6. Run writeToFB.js to add all basketball courts to database
+        1. click src -> services -> writeToFB.js
+        2. replace line 13 with
+       ```bash
         const serviceAccount = JSON.parse(readFileSync('./XXX.json', 'utf8'));
+       ```
         replace XXX with the name of the file you just saved in your root dir
-        run
+        3. run
        ```bash
        node src/services/writeToFB.js
        ```
