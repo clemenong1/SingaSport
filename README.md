@@ -2,6 +2,7 @@
 
 **We optimize public sports facility usage in Singapore by providing real-time availability,  
 crowd data, and social features to enhance the playing experience and build a connected sporting community.**
+We are still currently developing additional features such as real time video footage of courts. After which, we will deploy our app to the App Store!
 
 ---
 
@@ -149,7 +150,7 @@ Before you begin, ensure you have the following installed and set up:
     - Ensure that your simulators in the background is running
     - Click 'i' for IOS simulator or 'a' for android simulator.
 
-## 🧪 Testing
+## 🧪 Testing Geofence Feature
 
 This section explains how to test the **Geofencing** and **Live Basketball Court Occupancy** features in the SingaSport app.
 
